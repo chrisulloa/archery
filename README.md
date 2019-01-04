@@ -2,7 +2,7 @@
 
 rtree implementation in Clojure, using functional zippers.
 
-# References
+## References
 
 https://www.ibm.com/developerworks/library/j-treevisit/
 
