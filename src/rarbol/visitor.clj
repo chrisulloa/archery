@@ -1,7 +1,8 @@
 (ns rarbol.visitor
-  (require [rarbol.zipper :refer [visitor zipper]]
-           [rarbol.shape :refer [envelops?]]
-           [rarbol.util :refer [fast-contains?]]))
+  (:require [rarbol.zipper :refer [visitor zipper]]
+            [rarbol.shape :refer [envelops?]]
+            [rarbol.util :refer [fast-contains?]])
+  (:import [rarbol.shape Point]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
@@ -22,7 +23,7 @@
   "Visitor that skips nodes which do not contain shape."
   [shape]
   (fn [node state]
-    (when-not (and (envelops? node shape))
+    (when-not (or (type Point) (envelops? node shape))
       {:next true})))
 
 (defn leaf-collector
