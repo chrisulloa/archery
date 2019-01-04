@@ -1,6 +1,6 @@
-(ns rtree.core-test
+(ns rarbol.core-test
   (:require [clojure.test :refer :all]
-            [rtree.core :refer :all]))
+            [rarbol.core :refer :all]))
 
 (deftest a-test
   (testing "FIXME, I fail."
