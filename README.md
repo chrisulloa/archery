@@ -29,6 +29,9 @@ rtree implementation in Clojure, using functional zippers.
                           :y1 100,
                           :leaf? true,
                           :children [#rarbol.shape.Point{:x 60, :y 60}]}}
+                          
+(area (first (shape-finder (->Point 60 60))))
+=> 2500
 ```
 
 ## TODO
