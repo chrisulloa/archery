@@ -32,10 +32,21 @@ rtree implementation in Clojure, using functional zippers.
 ```
 
 ## TODO
+* Searching
+  * RadiusSearch
+  * ShapeIntersects
+  * ShapeContains
 * Insertion
+  * ChooseLeaf
+  * AdjustTree
+  * NodeSplitting
 * Deletion
-* Condensation
-* Node Splitting
+  * FindLeaf
+  * CondenseTree
+* Updates
+* R\*Tree
+* N-Dimensional Shapes
+* Benchmarking
 
 ## References
 
