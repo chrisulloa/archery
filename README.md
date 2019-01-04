@@ -43,7 +43,10 @@ rtree implementation in Clojure, using functional zippers.
 * Deletion
   * FindLeaf
   * CondenseTree
-* Updates
+* Updating
+* Splitting
+  * QuadraticSplit
+  * LinearSplit
 * R\*Tree
 * N-Dimensional Shapes
 * Benchmarking
