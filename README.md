@@ -31,6 +31,12 @@ rtree implementation in Clojure, using functional zippers.
                           :children [#rarbol.shape.Point{:x 60, :y 60}]}}
 ```
 
+## TODO
+* Insertion
+* Deletion
+* Condensation
+* Node Splitting
+
 ## References
 
 https://www.ibm.com/developerworks/library/j-treevisit/
