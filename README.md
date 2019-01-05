@@ -21,16 +21,16 @@ rtree implementation in Clojure, using functional zippers.
                            :children [(->Point 60 60)]})]}))
 => #'rarbol.core/tree       
 
-(enveloping-node-finder tree (->Point 60 60))
+(enveloped-node-finder tree (->Point 60 60))
 =>
-#{#rarbol.shape.Rectangle{:x0 50,
-                          :x1 100,
-                          :y0 50,
-                          :y1 100,
-                          :leaf? true,
-                          :children [#rarbol.shape.Point{:x 60, :y 60}]}}
+#rarbol.shape.Rectangle{:x0 50,
+                        :x1 100,
+                        :y0 50,
+                        :y1 100,
+                        :leaf? true,
+                        :children [#rarbol.shape.Point{:x 60, :y 60}]}
                           
-(area (first (shape-finder (->Point 60 60))))
+(area (shape-finder (->Point 60 60)))
 => 2500
 ```
 
