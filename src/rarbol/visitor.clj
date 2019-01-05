@@ -47,7 +47,7 @@
   [node]
   (:state (visitor (zipper node) #{} [leaf-visitor])))
 
-(defn enveloping-node-finder
+(defn enveloped-shape-finder
   "Finds first node that contains the shape."
   [node shape]
   (first
@@ -56,7 +56,7 @@
         (zipper node) #{} [(non-enveloped-shape-visitor shape)
                            (enveloped-shape-visitor shape)]))))
 
-(defn rectangle-contains-collector
+(defn enveloped-children-collector
   "Find entries which are enveloped by given rectangle."
   [node rectangle]
   (:state
