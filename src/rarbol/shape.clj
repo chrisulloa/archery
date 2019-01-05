@@ -12,6 +12,16 @@
   Geometry
   (area [_] 0))
 
+(defmulti intersects?
+          (fn [x y] [(class x) (class y)]))
+
+(defmethod intersects? [Rectangle Rectangle]
+  [r1 r2]
+  (or (not (or (> (:x0 r1) (:x1 r2))
+               (> (:x0 r2) (:x1 r1))))
+      (not (or (< (:y0 r1) (:y1 r2))
+               (< (:y0 r2) (:y1 r1))))))
+
 (defmulti envelops?
           (fn [x y] [(class x) (class y)]))
 
