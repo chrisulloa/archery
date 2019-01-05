@@ -1,8 +1,8 @@
 (ns rarbol.visitor
   (:require [rarbol.zipper :refer [visitor zipper]]
-            [rarbol.shape :refer [envelops? intersects?]]
+            [rarbol.shape :refer [area envelops? intersects? minimum-bounding-rectangle]]
             [rarbol.util :refer [fast-contains?]])
-  (:import [rarbol.shape Point]))
+  (:import [rarbol.shape Point Rectangle]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
@@ -15,7 +15,7 @@
   [shape]
   (fn [node state]
     (when (and (:leaf? node)
-               (fast-contains? (:children node) shape))
+               (fast-contains? (:shapes node) shape))
       {:state (conj state node)
        :stop  true})))
 
@@ -23,24 +23,38 @@
   "Visitor that skips nodes which do not contain shape."
   [shape]
   (fn [node state]
-    (when-not (or (type Point) (envelops? node shape))
+    (when-not (envelops? node shape)
       {:next true})))
 
 (defn non-intersected-visitor
   [rectangle]
   (fn [node state]
-    (when-not (or (type Point) (intersects? node rectangle))
+    (when-not (intersects? node rectangle)
       {:next true})))
 
-(defn enveloped-children-visitor
+(defn enveloped-shapes-visitor
   [rectangle]
   (fn [node state]
     (when (:leaf? node)
       (some->> node
-               :children
+               :shapes
                (filter #(envelops? rectangle %))
                (concat state)
                (hash-map :state)))))
+
+(defn insertion-visitor
+  [shape]
+  (letfn [(enlargement [node]
+            (- (area (minimum-bounding-rectangle [shape node]))
+               (area node)))]
+    (fn [node state]
+      (when (:leaf? node)
+        {:state node
+         :stop  true}
+        (if (and (not (empty? state))
+                 (<= (enlargement state) (enlargement node)))
+          {:next true}
+          {:state node})))))
 
 (defn leaf-collector
   "Collect all leaf nodes."
@@ -56,10 +70,15 @@
         (zipper node) #{} [(non-enveloped-shape-visitor shape)
                            (enveloped-shape-visitor shape)]))))
 
-(defn enveloped-children-collector
+(defn enveloped-shapes-collector
   "Find entries which are enveloped by given rectangle."
   [node rectangle]
   (:state
     (visitor
       (zipper node) #{} [(non-intersected-visitor rectangle)
-                         (enveloped-children-visitor rectangle)])))
+                         (enveloped-shapes-visitor rectangle)])))
+
+(defn insertion-finder
+  "Finds node that is best suited for insertion of shape."
+  [node shape]
+  (:state (visitor (zipper node) #{} [(insertion-visitor shape)])))

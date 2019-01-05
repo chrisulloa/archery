@@ -30,26 +30,20 @@
   (and (<= (:x0 r) (:x p) (:x1 r))
        (<= (:y0 r) (:y p) (:y1 r))))
 
-(defmulti collect-points
-          (fn [shapes]
-            (let [shapes-type (set (map class shapes))]
-              (when (= 1 (count shapes-type))
-                (first shapes-type)))))
+(defmulti collect-points class)
 
-(defmethod collect-points Rectangle [shapes]
-  {:xs (concat (map :x0 shapes)
-               (map :x1 shapes))
-   :ys (concat (map :y0 shapes)
-               (map :y1 shapes))})
+(defmethod collect-points Rectangle [shape]
+  {:xs [(:x0 shape) (:x1 shape)]
+   :ys [(:y0 shape) (:y1 shape)]})
 
-(defmethod collect-points Point [shapes]
-  {:xs (map :x shapes)
-   :ys (map :y shapes)})
+(defmethod collect-points Point [shape]
+  {:xs [(:x shape)]
+   :ys [(:y shape)]})
 
 (defn minimum-bounding-rectangle
-  [children]
-  (let [points (collect-points children)
-        xs (:xs points)
-        ys (:ys points)]
+  [shapes]
+  (let [points (map collect-points shapes)
+        xs (flatten (map :xs points))
+        ys (flatten (map :ys points))]
     (Rectangle. (reduce min xs) (reduce max xs)
                 (reduce min ys) (reduce max ys))))
