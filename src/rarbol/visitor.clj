@@ -10,20 +10,15 @@
   (when (:leaf? node)
     {:state (conj state node)}))
 
-(defn enveloped-shape-visitor
+(defn node-contains-shape-visitor
   "Visitor that returns node which contains shape."
   [shape]
   (fn [node state]
-    (when (and (:leaf? node)
-               (fast-contains? (:shapes node) shape))
-      {:state (conj state node)
-       :stop  true})))
-
-(defn non-enveloped-shape-visitor
-  "Visitor that skips nodes which do not contain shape."
-  [shape]
-  (fn [node state]
-    (when-not (envelops? node shape)
+    (if (envelops? node shape)
+      (when (and (:leaf? node)
+                 (fast-contains? (:shapes node) shape))
+        {:state (conj state node)
+         :stop  true})
       {:next true})))
 
 (defn non-intersected-visitor
@@ -61,14 +56,13 @@
   [node]
   (:state (visitor (zipper node) #{} [leaf-visitor])))
 
-(defn enveloped-shape-finder
+(defn node-contains-shape-finder
   "Finds first node that contains the shape."
   [node shape]
   (first
     (:state
       (visitor
-        (zipper node) #{} [(non-enveloped-shape-visitor shape)
-                           (enveloped-shape-visitor shape)]))))
+        (zipper node) #{} [(node-contains-shape-visitor shape)]))))
 
 (defn enveloped-shapes-collector
   "Find entries which are enveloped by given rectangle."

@@ -30,6 +30,11 @@
   (and (<= (:x0 r) (:x p) (:x1 r))
        (<= (:y0 r) (:y p) (:y1 r))))
 
+(defmethod envelops? [Rectangle Rectangle]
+  [r1 r2]
+  (and (<= (:x0 r1) (:x0 r2) (:x1 r2) (:x1 r1))
+       (<= (:y0 r1) (:y0 r2) (:y1 r2) (:y1 r1))))
+
 (defmulti collect-points class)
 
 (defmethod collect-points Rectangle [shape]

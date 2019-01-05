@@ -24,7 +24,7 @@ rtree implementation in Clojure, using functional zippers.
 (enveloped-shapes-collector tree (->Rectangle 0 10 0 10))
 => (#rarbol.shape.Point{:x 1, :y 1} #rarbol.shape.Point{:x 5, :y 5})
 
-(enveloped-shape-finder tree (->Point 60 60))
+(node-contains-shape-finder tree (->Point 60 60))
 =>
 #rarbol.shape.Rectangle{:x0 50,
                         :x1 100,
@@ -32,9 +32,6 @@ rtree implementation in Clojure, using functional zippers.
                         :y1 100,
                         :leaf? true,
                         :shapes [#rarbol.shape.Point{:x 60, :y 60}]}
-                          
-(area (shape-finder (->Point 60 60)))
-=> 2500
 
 (enveloped-shapes-collector tree (->Rectangle 0 60 0 60))
 => (#rarbol.shape.Point{:x 1, :y 1} #rarbol.shape.Point{:x 5, :y 5} #rarbol.shape.Point{:x 60, :y 60})
