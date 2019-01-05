@@ -35,12 +35,12 @@
 (defn enveloped-children-visitor
   [rectangle]
   (fn [node state]
-    (when (and (:leaf? node))
-      (->> node
-           :children
-           (filter #(envelops? rectangle %))
-           (conj state)
-           (hash-map :state)))))
+    (when (:leaf? node)
+      (some->> node
+               :children
+               (filter #(envelops? rectangle %))
+               (concat state)
+               (hash-map :state)))))
 
 (defn leaf-collector
   "Collect all leaf nodes."
