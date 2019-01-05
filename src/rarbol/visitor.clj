@@ -1,8 +1,7 @@
 (ns rarbol.visitor
   (:require [rarbol.zipper :refer [visitor zipper]]
             [rarbol.shape :refer [area envelops? intersects? minimum-bounding-rectangle]]
-            [rarbol.util :refer [fast-contains?]])
-  (:import [rarbol.shape Point Rectangle]))
+            [rarbol.util :refer [fast-contains?]])))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
