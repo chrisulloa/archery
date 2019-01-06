@@ -28,7 +28,7 @@
                  {:x0       0 :x1 100
                   :y0       0 :y1 100
                   :children [child1 child2]})]
-      (is (= #{child1 child2} (leaf-collector tree)))
+      (is (= #{child1 child2} (set (leaf-collector tree))))
       (is (= child2  (insertion-finder tree (->Rectangle 65 70 65 70))))
       (is (= child1 (insertion-finder tree (->Point -5 -5))))
       (is (= child2 (insertion-finder tree (->Rectangle 110 115 110 115))))

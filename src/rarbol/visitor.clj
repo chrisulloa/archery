@@ -1,5 +1,5 @@
 (ns rarbol.visitor
-  (:require [rarbol.zipper :refer [visitor zipper]]
+  (:require [rarbol.zipper :refer [tree-visitor zipper]]
             [rarbol.shape :refer [area envelops? intersects? minimum-bounding-rectangle]]
             [rarbol.util :refer [fast-contains?]]))
 
@@ -21,6 +21,7 @@
       {:next true})))
 
 (defn enveloped-shapes-visitor
+  "Visitor that returns shapes enveloped by given rectangle."
   [rectangle]
   (fn [node state]
     (if (intersects? node rectangle)
@@ -33,6 +34,7 @@
       {:next true})))
 
 (defn insertion-visitor
+  "Visitor that returns the best node for insertion of given shape."
   [shape]
   (letfn [(enlargement [node]
             (- (area (minimum-bounding-rectangle [shape node]))
@@ -49,24 +51,24 @@
 (defn leaf-collector
   "Collect all leaf nodes."
   [node]
-  (:state (visitor (zipper node) #{} [leaf-visitor])))
+  (:state (tree-visitor (zipper node) [leaf-visitor])))
 
 (defn node-contains-shape-finder
   "Finds first node that contains the shape."
   [node shape]
   (first
     (:state
-      (visitor
-        (zipper node) #{} [(node-contains-shape-visitor shape)]))))
+      (tree-visitor
+        (zipper node) [(node-contains-shape-visitor shape)]))))
 
 (defn enveloped-shapes-collector
   "Find entries which are enveloped by given rectangle."
   [node rectangle]
   (:state
-    (visitor
-      (zipper node) #{} [(enveloped-shapes-visitor rectangle)])))
+    (tree-visitor
+      (zipper node) [(enveloped-shapes-visitor rectangle)])))
 
 (defn insertion-finder
   "Finds node that is best suited for insertion of shape."
   [node shape]
-  (:state (visitor (zipper node) #{} [(insertion-visitor shape)])))
+  (:state (tree-visitor (zipper node) [(insertion-visitor shape)])))

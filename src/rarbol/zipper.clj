@@ -37,9 +37,10 @@
         {:node new-node, :state new-state, :stop stop}
         (recur new-node new-state rest-visitors)))))
 
-(defn visitor
+; TODO: Edit next-loc in case of updating the parent on insertion.
+(defn tree-visitor
   ([zipper visitors]
-   (visitor zipper nil visitors))
+   (tree-visitor zipper nil visitors))
   ([zipper initial-state visitors]
    (loop [loc zipper
           state initial-state]
