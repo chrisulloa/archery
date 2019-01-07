@@ -48,6 +48,15 @@
           {:next true}
           {:state node})))))
 
+(defn split-node-visitor
+  [max-node-size]
+  (fn [node state]
+    (when (and (= state node)
+               (< (count (:shapes node)) max-node-size))
+
+
+      )))
+
 (defn leaf-collector
   "Collect all leaf nodes."
   [node]
