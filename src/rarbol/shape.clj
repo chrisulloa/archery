@@ -68,11 +68,43 @@
        (map #(vector (reduce min %) (reduce max %)))
        (Rectangle.)))
 
-(defn shape-with-split-data
+(defn shape->rectangle
   [shape]
-  (let [points (collect-points shape)]
-    {:shape shape
-     :x-max (reduce max (:xs points))
-     :y-max (reduce max (:ys points))
-     :x-min (reduce min (:xs points))
-     :y-min (reduce min (:xs points))}))
+  (if (instance? Rectangle shape)
+    shape
+    (minimum-bounding-rectangle [shape])))
+
+(defn augment-shape
+  [shape]
+  (assoc shape :augmented (zipmap (range (dim shape))
+                                  (collect-points (shape->rectangle shape)))))
+
+(defn augmented-shape-getter
+  [position dimension]
+  (fn [shape] (-> shape :augmented (get dimension) position)))
+
+(defn linear-seeds
+  [shapes]
+  (let [dimensions (dim (first shapes))
+        reduced-shapes (map augment-shape shapes)
+        key-val augmented-shape-getter
+        min-or-max-side #(apply (partial %1 (key-val %2 %3)) reduced-shapes)]
+    (apply (partial min-key :normalized-separation)
+           (for [d (range dimensions)]
+             (let [highest-low-side (min-or-max-side max-key first d)
+                   lowest-low-side (min-or-max-side min-key first d)
+                   highest-high-side (min-or-max-side max-key second d)
+                   lowest-high-side (min-or-max-side min-key second d)]
+               {:dimension d
+                :highest-low-side      (dissoc highest-low-side :augmented)
+                :lowest-high-side      (dissoc lowest-high-side :augmented)
+                :normalized-separation (/ (- ((key-val first d) highest-low-side)
+                                             ((key-val second d) lowest-high-side))
+                                          (- ((key-val second d) highest-high-side)
+                                             ((key-val first d) lowest-low-side)))})))))
+
+(defmulti linear-split class)
+
+(defmethod linear-split Rectangle [r]
+  (when-let [shapes (:values r)]
+    (linear-seeds shapes)))
