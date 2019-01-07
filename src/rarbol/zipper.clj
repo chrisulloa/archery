@@ -17,7 +17,7 @@
 
 (defmethod make-node Rectangle [r children]
   (let [bounds (minimum-bounding-rectangle children)]
-    (assoc (apply ->Rectangle bounds) :children children)))
+    (assoc (->Rectangle bounds) :children children)))
 
 (defn zipper [node]
   (zip/zipper branch? children make-node node))
@@ -37,7 +37,6 @@
         {:node new-node, :state new-state, :stop stop}
         (recur new-node new-state rest-visitors)))))
 
-; TODO: Edit next-loc in case of updating the parent on insertion.
 (defn tree-visitor
   ([zipper visitors]
    (tree-visitor zipper nil visitors))

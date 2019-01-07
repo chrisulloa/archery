@@ -15,7 +15,7 @@
   (fn [node state]
     (if (envelops? node shape)
       (when (and (:leaf? node)
-                 (fast-contains? (:shapes node) shape))
+                 (fast-contains? (:values node) shape))
         {:state (conj state node)
          :stop  true})
       {:next true})))
@@ -27,7 +27,7 @@
     (if (intersects? node rectangle)
       (when (:leaf? node)
         (some->> node
-                 :shapes
+                 :values
                  (filter #(envelops? rectangle %))
                  (concat state)
                  (hash-map :state)))
