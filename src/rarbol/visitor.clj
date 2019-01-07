@@ -15,7 +15,7 @@
   (fn [node state]
     (if (envelops? node shape)
       (when (and (:leaf? node)
-                 (fast-contains? (:shapes node) shape))
+                 (fast-contains? (:values node) shape))
         {:state (conj state node)
          :stop  true})
       {:next true})))
@@ -27,7 +27,7 @@
     (if (intersects? node rectangle)
       (when (:leaf? node)
         (some->> node
-                 :shapes
+                 :values
                  (filter #(envelops? rectangle %))
                  (concat state)
                  (hash-map :state)))
@@ -47,15 +47,6 @@
                  (<= (enlargement state) (enlargement node)))
           {:next true}
           {:state node})))))
-
-(defn split-node-visitor
-  [max-node-size]
-  (fn [node state]
-    (when (and (= state node)
-               (< (count (:shapes node)) max-node-size))
-
-
-      )))
 
 (defn leaf-collector
   "Collect all leaf nodes."
