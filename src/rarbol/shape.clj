@@ -115,22 +115,39 @@
                                     (- ((key-val second d) highest-high-side)
                                        ((key-val first d) lowest-low-side)))})))))
 
+(defn clean-seed [seed] (dissoc seed :diff :next-seed :enlarged-seed))
+
+(defn pick-next
+  [shape r-seed l-seed]
+  (let [r-enlarged (enlarge r-seed (clean-seed shape))
+        l-enlarged (enlarge l-seed (clean-seed shape))
+        r-seed? (<= (area r-enlarged) (area l-enlarged))]
+    {:diff      (Math/abs (- (area r-enlarged) (area l-enlarged)))
+     :next-seed (if r-seed? :r-seed :l-seed)
+     :enlarged-seed (if r-seed? r-enlarged l-enlarged)}))
+
 (defmulti linear-split class)
 
 (defmethod linear-split Rectangle [r]
   (when-let [shapes (:values r)]
     (let [seeds (-> shapes linear-seeds :seeds)]
-      (loop [shapes (remove #{(first seeds) (second seeds)} shapes)
-             r-seed (-> [(first seeds)]
+      (loop [r-seed (-> [(first seeds)]
                         (minimum-bounding-rectangle)
                         (assoc :values [(first seeds)]))
              l-seed (-> [(second seeds)]
                         (minimum-bounding-rectangle)
-                        (assoc :values [(second seeds)]))]
-        (if (not (empty? shapes))
-          ; TODO: Break ties using counts
-          (if (<= (enlargement (first shapes) r-seed)
-                  (enlargement (first shapes) l-seed))
-            (recur (rest shapes) (enlarge r-seed (first shapes)) l-seed)
-            (recur (rest shapes) r-seed (enlarge l-seed (first shapes))))
-          [r-seed l-seed])))))
+                        (assoc :values [(second seeds)]))
+             shapes (remove #{(first seeds) (second seeds)} shapes)]
+          (if (not (empty? shapes))
+            (let [sorted-shapes (->> shapes
+                                     (map #(merge % (pick-next % r-seed l-seed)))
+                                     (sort-by :diff >))]
+              ; TODO: Break ties using counts
+              (if (= (:next-seed (first sorted-shapes)) :r-seed)
+                (recur (:enlarged-seed (first sorted-shapes))
+                       l-seed
+                       (rest sorted-shapes))
+                (recur r-seed
+                       (:enlarged-seed (first sorted-shapes))
+                       (rest sorted-shapes))))
+            [r-seed l-seed])))))

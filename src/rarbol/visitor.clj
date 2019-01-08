@@ -28,13 +28,14 @@
   "Visitor that returns shapes enveloped by given rectangle."
   [rectangle]
   (fn [node state]
-    (if (intersects? node rectangle)
+    (if (or (envelops? node rectangle)
+            (intersects? node rectangle))
       (when (:leaf? node)
-        (some->> node
-                 :values
-                 (filter #(envelops? rectangle %))
-                 (concat state)
-                 (hash-map :state)))
+        (->> node
+             :values
+             (filter #(envelops? rectangle %))
+             (concat state)
+             (hash-map :state)))
       {:next true})))
 
 (defn insertion-visitor
