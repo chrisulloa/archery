@@ -1,6 +1,10 @@
 (ns rarbol.visitor
   (:require [rarbol.zipper :refer [tree-visitor zipper]]
-            [rarbol.shape :refer [area envelops? intersects? minimum-bounding-rectangle]]
+            [rarbol.shape :refer [enlargement
+                                  area
+                                  envelops?
+                                  intersects?
+                                  minimum-bounding-rectangle]]
             [rarbol.util :refer [fast-contains?]]))
 
 (defn leaf-visitor
@@ -36,17 +40,14 @@
 (defn insertion-visitor
   "Visitor that returns the best node for insertion of given shape."
   [shape]
-  (letfn [(enlargement [node]
-            (- (area (minimum-bounding-rectangle [shape node]))
-               (area node)))]
-    (fn [node state]
-      (when (:leaf? node)
-        {:state node
-         :stop  true}
-        (if (and (not (empty? state))
-                 (<= (enlargement state) (enlargement node)))
-          {:next true}
-          {:state node})))))
+  (fn [node state]
+    (when (:leaf? node)
+      {:state node
+       :stop  true}
+      (if (and (not (empty? state))
+               (<= (enlargement shape state) (enlargement shape node)))
+        {:next true}
+        {:state node}))))
 
 (defn leaf-collector
   "Collect all leaf nodes."

@@ -83,28 +83,54 @@
   [position dimension]
   (fn [shape] (-> shape :augmented (get dimension) position)))
 
+(defn enlargement
+  [shape node]
+  (- (area (minimum-bounding-rectangle [shape node]))
+     (area node)))
+
+(defn enlarge
+  [rectangle shape]
+  (let [new-values (conj (:values rectangle) shape)]
+    (assoc (minimum-bounding-rectangle new-values)
+      :values new-values)))
+
+;TODO: Make this easier to read
 (defn linear-seeds
   [shapes]
   (let [dimensions (dim (first shapes))
         reduced-shapes (map augment-shape shapes)
         key-val augmented-shape-getter
         min-or-max-side #(apply (partial %1 (key-val %2 %3)) reduced-shapes)]
-    (apply (partial min-key :normalized-separation)
+    (apply (partial min-key :norm-separation)
            (for [d (range dimensions)]
              (let [highest-low-side (min-or-max-side max-key first d)
                    lowest-low-side (min-or-max-side min-key first d)
                    highest-high-side (min-or-max-side max-key second d)
                    lowest-high-side (min-or-max-side min-key second d)]
-               {:dimension d
-                :highest-low-side      (dissoc highest-low-side :augmented)
-                :lowest-high-side      (dissoc lowest-high-side :augmented)
-                :normalized-separation (/ (- ((key-val first d) highest-low-side)
+               {:dimension       d
+                :seeds           [(dissoc lowest-high-side :augmented)
+                                  (dissoc highest-low-side :augmented)]
+                :norm-separation (/ (- ((key-val first d) highest-low-side)
                                              ((key-val second d) lowest-high-side))
-                                          (- ((key-val second d) highest-high-side)
-                                             ((key-val first d) lowest-low-side)))})))))
+                                    (- ((key-val second d) highest-high-side)
+                                       ((key-val first d) lowest-low-side)))})))))
 
 (defmulti linear-split class)
 
 (defmethod linear-split Rectangle [r]
   (when-let [shapes (:values r)]
-    (linear-seeds shapes)))
+    (let [seeds (-> shapes linear-seeds :seeds)]
+      (loop [shapes (remove #{(first seeds) (second seeds)} shapes)
+             r-seed (-> [(first seeds)]
+                        (minimum-bounding-rectangle)
+                        (assoc :values [(first seeds)]))
+             l-seed (-> [(second seeds)]
+                        (minimum-bounding-rectangle)
+                        (assoc :values [(second seeds)]))]
+        (if (not (empty? shapes))
+          ; TODO: Break ties using counts
+          (if (<= (enlargement (first shapes) r-seed)
+                  (enlargement (first shapes) l-seed))
+            (recur (rest shapes) (enlarge r-seed (first shapes)) l-seed)
+            (recur (rest shapes) r-seed (enlarge l-seed (first shapes))))
+          [r-seed l-seed])))))
