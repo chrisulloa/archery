@@ -59,6 +59,11 @@
 
 (deftest test-envelops?
   (testing "Envelops function."
+    (is (= true (envelops? (map->Point {:shape [5 10] :foo ""})
+                           (->Point [5 10]))))
+    (is (= false (envelops? (->Point [5 10]) (->Point [0 0]))))
+    (is (= false (envelops? (->Point [5 10]) (->Rectangle [[5 10] [35 35]]))))
+    (is (= true (envelops? (->Rectangle [[5 10] [35 39]]) (->Point [6 38]))))
     (is (= true (envelops? (->Rectangle [[100 300] [100 300]])
                            (->Rectangle [[150 250] [150 250]]))))
     (is (= false (envelops? (->Rectangle [[100 150] [25 300]])
@@ -68,3 +73,36 @@
   (testing "Collect points function."
     (is (= [[0] [3]] (collect-points (->Point [0 3]))))
     (is (= [[0 10] [5 15]] (collect-points (->Rectangle [[0 10] [5 15]]))))))
+
+(deftest test-shape->rectangle
+  (testing "shape->rectangle"
+    (is (= (->Rectangle [[5 10] [5 10]])
+           (shape->rectangle (->Rectangle [[5 10] [5 10]]))))
+    (is (= (->Rectangle [[5 5] [10 10]])
+           (shape->rectangle (->Point [5 10]))))))
+
+(deftest test-augment-shape
+  (testing "augment-shape"
+    (is (= {0 [10 10], 1 [15 15]}
+           (:augmented (augment-shape (->Point [10 15])))))
+    (is (= {0 [10 15], 1 [35 40]}
+           (:augmented (augment-shape (->Rectangle [[10 15] [35 40]])))))))
+
+(deftest test-augmented-key-getter
+  (is (= 10 ((augmented-key-getter second 2)
+              (augment-shape (->Rectangle [[10 15] [3 5] [0 10]]))))))
+
+(deftest test-area-enlargement-diff
+  (is (= 25 (area-enlargement-diff (->Rectangle [[0 5] [0 5]]) (->Point [5 10]) ))))
+
+(deftest test-compress-rectangle
+  (is (= (->Rectangle [[5 10] [5 10]])
+         (compress-rectangle (->Rectangle [[5 10] [5 10]]))))
+  (is (= (:shape (->Rectangle [[5 5] [5 5]]))
+         (:shape (compress-rectangle (->Rectangle [[0 0] [0 0]])
+                                     (->Point [5 5])))))
+  (is (= (:shape (->Rectangle [[5 10] [5 10]]))
+         (:shape (compress-rectangle (->Rectangle [[5 8] [5 8]])
+                                     (->Point [5 5])
+                                     (->Point [5 10])
+                                     (->Point [10 10]))))))

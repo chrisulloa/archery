@@ -54,7 +54,7 @@
          (map envelops-by-dim?)
          (every? true?))))
 
-(defmethod envelops? [Point Point] [p1 p2] (= p1 p2))
+(defmethod envelops? [Point Point] [p1 p2] (= (:shape p1) (:shape p2)))
 
 ; Collects shape points along dimensions for calculating
 ; minimum bounding rectangle."
@@ -102,7 +102,7 @@
 (defn area-enlargement-diff
   "Difference in area of rectangle node before and after
    enlargement with a shape"
-  [shape node]
+  [node shape]
   (- (area (minimum-bounding-rectangle shape node))
      (area node)))
 

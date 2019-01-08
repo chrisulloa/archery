@@ -45,7 +45,7 @@
       {:state node
        :stop  true}
       (if (and (not (empty? state))
-               (<= (area-enlargement-diff shape state) (area-enlargement-diff shape node)))
+               (<= (area-enlargement-diff state shape) (area-enlargement-diff node shape)))
         {:next true}
         {:state node}))))
 
