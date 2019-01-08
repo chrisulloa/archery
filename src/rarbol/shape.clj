@@ -94,6 +94,10 @@
     (assoc (minimum-bounding-rectangle new-values)
       :values new-values)))
 
+(defn tighten-rectangle
+  [rectangle]
+  (merge rectangle (minimum-bounding-rectangle [rectangle])))
+
 ;TODO: Make this easier to read
 (defn linear-seeds
   [shapes]
@@ -131,12 +135,8 @@
 (defmethod linear-split Rectangle [r]
   (when-let [shapes (:values r)]
     (let [seeds (-> shapes linear-seeds :seeds)]
-      (loop [r-seed (-> [(first seeds)]
-                        (minimum-bounding-rectangle)
-                        (assoc :values [(first seeds)]))
-             l-seed (-> [(second seeds)]
-                        (minimum-bounding-rectangle)
-                        (assoc :values [(second seeds)]))
+      (loop [r-seed (tighten-rectangle (first seeds))
+             l-seed (tighten-rectangle (second seeds))
              shapes (remove #{(first seeds) (second seeds)} shapes)]
           (if (not (empty? shapes))
             (let [sorted-shapes (->> shapes
