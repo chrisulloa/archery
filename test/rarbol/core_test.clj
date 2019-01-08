@@ -12,21 +12,21 @@
 (deftest test-visitors
   (testing "Visitor functions."
     (let [child1 (map->Rectangle
-                   {:shape [[0 50] [0 50]]
-                    :leaf?  true
+                   {:shape    [[0 50] [0 50]]
+                    :leaf?    true
                     :children [(->Point [1 1])
                                (->Point [5 5])
                                (->Rectangle [[10 15] [10 15]])]})
           child2 (map->Rectangle
-                   {:shape [[50 100] [50 100]]
-                    :leaf?  true
+                   {:shape    [[50 100] [50 100]]
+                    :leaf?    true
                     :children [(->Point [60 60])
-                             (->Rectangle [[55 60] [55 60]])]})
+                               (->Rectangle [[55 60] [55 60]])]})
           tree (map->Rectangle
-                 {:shape [[50 100] [50 100]]
+                 {:shape    [[50 100] [50 100]]
                   :children [child1 child2]})]
       (is (= #{child1 child2} (set (leaf-collector tree))))
-      (is (= child2  (insertion-finder tree (->Rectangle [[65 70] [65 70]]))))
+      (is (= child2 (insertion-finder tree (->Rectangle [[65 70] [65 70]]))))
       (is (= child1 (insertion-finder tree (->Point [-5 -5]))))
       (is (= child2 (insertion-finder tree (->Rectangle [[110 115] [110 115]]))))
       (is (= child1 (node-contains-shape-finder tree (->Point [1 1]))))
@@ -93,7 +93,7 @@
               (augment-shape (->Rectangle [[10 15] [3 5] [0 10]]))))))
 
 (deftest test-area-enlargement-diff
-  (is (= 25 (area-enlargement-diff (->Rectangle [[0 5] [0 5]]) (->Point [5 10]) ))))
+  (is (= 25 (area-enlargement-diff (->Rectangle [[0 5] [0 5]]) (->Point [5 10])))))
 
 (deftest test-compress-rectangle
   (is (= (->Rectangle [[5 10] [5 10]])

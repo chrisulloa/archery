@@ -11,7 +11,7 @@
   [node state]
   (when (:leaf? node)
     {:state (conj state node)
-     :next true}))
+     :next  true}))
 
 (defn node-contains-shape-visitor
   "Visitor that returns node which contains shape."
@@ -32,10 +32,10 @@
             (intersects? node rectangle))
       (when (:leaf? node)
         {:state
-         (->> node
-              :children
-              (filter #(envelops? rectangle %))
-              (concat state))
+               (->> node
+                    :children
+                    (filter #(envelops? rectangle %))
+                    (concat state))
          :next true})
       {:next true})))
 
