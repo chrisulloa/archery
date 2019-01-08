@@ -134,28 +134,34 @@
   ([rectangle shape & shapes]
    (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
 
+(defn linear-seeds-across-dimensions
+  [shapes]
+  ;TODO: Make this easier to read
+  (let [dimensions (dim (first shapes))
+        reduced-shapes (map augment-shape shapes)
+        min-or-max-side #(apply (partial %1 (augmented-key-getter %2 %3)) reduced-shapes)]
+    (for [d (range dimensions)]
+      (let [highest-low-side (min-or-max-side max-key first d)
+            lowest-low-side (min-or-max-side min-key first d)
+            highest-high-side (min-or-max-side max-key second d)
+            lowest-high-side (min-or-max-side min-key second d)]
+        {:dimension       d
+         :seeds           [(compress-rectangle (dissoc lowest-high-side :augmented))
+                           (compress-rectangle (dissoc highest-low-side :augmented))]
+         :norm-separation (/ (- ((augmented-key-getter first d) highest-low-side)
+                                ((augmented-key-getter second d) lowest-high-side))
+                             (- ((augmented-key-getter second d) highest-high-side)
+                                ((augmented-key-getter first d) lowest-low-side)))}))))
+
 (defn linear-seeds
   "1.) Along each dimension, finds entry whose rectangle has the highest low side and
        the lowest high side, calculating the normalized separation for each dimension.
    2.)  Chooses the pair with the greatest normalized separation"
-  ;TODO: Make this easier to read
   [shapes]
-  (let [dimensions (dim (first shapes))
-        reduced-shapes (map augment-shape shapes)
-        min-or-max-side #(apply (partial %1 (augmented-key-getter %2 %3)) reduced-shapes)]
-    (->> (for [d (range dimensions)]
-           (let [highest-low-side (min-or-max-side max-key first d)
-                 lowest-low-side (min-or-max-side min-key first d)
-                 highest-high-side (min-or-max-side max-key second d)
-                 lowest-high-side (min-or-max-side min-key second d)]
-             {:dimension       d
-              :seeds           [(compress-rectangle (dissoc lowest-high-side :augmented))
-                                (compress-rectangle (dissoc highest-low-side :augmented))]
-              :norm-separation (/ (- ((augmented-key-getter first d) highest-low-side)
-                                     ((augmented-key-getter second d) lowest-high-side))
-                                  (- ((augmented-key-getter second d) highest-high-side)
-                                     ((augmented-key-getter first d) lowest-low-side)))}))
-         (apply (partial max-key :norm-separation)))))
+  (->> shapes
+       linear-seeds-across-dimensions
+       (apply (partial max-key :norm-separation))
+       (:seeds)))
 
 (defn clean-seed
   "Removes any extra data attached to a shape during linear split."
@@ -209,7 +215,7 @@
   ; TODO: Incorporate minimum m
   ; TODO: Resolve ties by entry count as well
   (when-let [shapes (:children r)]
-    (let [seeds (-> shapes linear-seeds :seeds)]
+    (let [seeds (linear-seeds shapes)]
       (loop [r-seed (initialize-seed (first seeds))
              l-seed (initialize-seed (second seeds))
              sorted-shapes (some->> shapes

@@ -106,3 +106,31 @@
                                      (->Point [5 5])
                                      (->Point [5 10])
                                      (->Point [10 10]))))))
+
+(deftest test-linear-seeds
+  (let [shapes [(->Point [0 0])
+                (->Point [10 10])
+                (->Rectangle [[0 3] [6 8]])
+                (->Rectangle [[15 30] [35 55]])]
+        seeds (linear-seeds-across-dimensions shapes)]
+    (is (= {:dimension       0
+            :seeds           [(->Point [0 0]) (->Rectangle [[15 30] [35 55]])]
+            :norm-separation (/ 15 30)}
+          (first seeds)))
+    (is (= {:dimension 1
+            :seeds [(->Point [0 0]) (->Rectangle [[15 30] [35 55]])]
+            :norm-separation (/ 35 55)}
+           (second seeds)))
+    (is (= [(->Point [0 0]) (->Rectangle [[15 30] [35 55]])]
+           (linear-seeds shapes)))))
+
+(deftest test-initialize-seed
+  (let [point-seed (->Point [15 30])
+        rectangle-seed (->Rectangle [[15 30] [35 45]])]
+    (is (= (map->Rectangle {:shape [[15 15] [30 30]]
+                            :children [point-seed]})
+           (initialize-seed point-seed)))
+    (is (= (map->Rectangle {:shape [[15 30] [35 45]]
+                            :children [rectangle-seed]})
+           (initialize-seed rectangle-seed)))))
+
