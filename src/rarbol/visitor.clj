@@ -1,6 +1,6 @@
 (ns rarbol.visitor
   (:require [rarbol.zipper :refer [tree-visitor zipper]]
-            [rarbol.shape :refer [enlargement
+            [rarbol.shape :refer [area-enlargement-diff
                                   area
                                   envelops?
                                   intersects?
@@ -46,7 +46,7 @@
       {:state node
        :stop  true}
       (if (and (not (empty? state))
-               (<= (enlargement shape state) (enlargement shape node)))
+               (<= (area-enlargement-diff shape state) (area-enlargement-diff shape node)))
         {:next true}
         {:state node}))))
 
