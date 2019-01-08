@@ -173,9 +173,11 @@
    between potential insertion to the two seeds."
   [shape r-seed l-seed]
   (let [r-enlarged (compress-rectangle r-seed (clean-seed shape))
+        r-area-diff (- (area r-enlarged) (area r-seed))
         l-enlarged (compress-rectangle l-seed (clean-seed shape))
-        r-seed? (<= (area r-enlarged) (area l-enlarged))]
-    {:diff          (abs (- (area r-enlarged) (area l-enlarged)))
+        l-area-diff (- (area l-enlarged) (area l-seed))
+        r-seed? (<= r-area-diff l-area-diff)]
+    {:diff          (abs (- r-area-diff l-area-diff))
      :next-seed     (if r-seed? :r-seed :l-seed)
      :enlarged-seed (if r-seed? r-enlarged l-enlarged)}))
 
