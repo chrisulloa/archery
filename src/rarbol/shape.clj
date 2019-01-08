@@ -117,7 +117,7 @@
      (merge rectangle
             (assoc (apply minimum-bounding-rectangle values) :values values))))
   ([rectangle shape & shapes]
-    (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
+   (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
 
 (defn linear-seeds
   "1.) Along each dimension, finds entry whose rectangle has the highest low side and
@@ -154,8 +154,8 @@
   (let [r-enlarged (compress-rectangle r-seed (clean-seed shape))
         l-enlarged (compress-rectangle l-seed (clean-seed shape))
         r-seed? (<= (area r-enlarged) (area l-enlarged))]
-    {:diff      (abs (- (area r-enlarged) (area l-enlarged)))
-     :next-seed (if r-seed? :r-seed :l-seed)
+    {:diff          (abs (- (area r-enlarged) (area l-enlarged)))
+     :next-seed     (if r-seed? :r-seed :l-seed)
      :enlarged-seed (if r-seed? r-enlarged l-enlarged)}))
 
 (defn next-picks
@@ -200,17 +200,17 @@
              sorted-shapes (some->> shapes
                                     (remove #{r-seed l-seed})
                                     (next-picks l-seed r-seed))]
-          (if-not (empty? sorted-shapes)
-            (let [{:keys [next-seed enlarged-seed]} (first sorted-shapes)]
-              (if (= next-seed :r-seed)
-                (recur enlarged-seed
-                       l-seed
-                       (next-picks enlarged-seed
-                                   l-seed
-                                   (rest sorted-shapes)))
-                (recur r-seed
-                       enlarged-seed
-                       (next-picks r-seed
-                                   enlarged-seed
-                                   (rest sorted-shapes)))))
-            [r-seed l-seed])))))
+        (if-not (empty? sorted-shapes)
+          (let [{:keys [next-seed enlarged-seed]} (first sorted-shapes)]
+            (if (= next-seed :r-seed)
+              (recur enlarged-seed
+                     l-seed
+                     (next-picks enlarged-seed
+                                 l-seed
+                                 (rest sorted-shapes)))
+              (recur r-seed
+                     enlarged-seed
+                     (next-picks r-seed
+                                 enlarged-seed
+                                 (rest sorted-shapes)))))
+          [r-seed l-seed])))))
