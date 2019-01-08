@@ -10,7 +10,8 @@
   "Visitor that collects all leaf nodes."
   [node state]
   (when (:leaf? node)
-    {:state (conj state node)}))
+    {:state (conj state node)
+     :next true}))
 
 (defn node-contains-shape-visitor
   "Visitor that returns node which contains shape."
@@ -18,7 +19,7 @@
   (fn [node state]
     (if (envelops? node shape)
       (when (and (:leaf? node)
-                 (fast-contains? (:values node) shape))
+                 (fast-contains? (:children node) shape))
         {:state (conj state node)
          :stop  true})
       {:next true})))
@@ -30,11 +31,12 @@
     (if (or (envelops? node rectangle)
             (intersects? node rectangle))
       (when (:leaf? node)
-        (->> node
-             :values
-             (filter #(envelops? rectangle %))
-             (concat state)
-             (hash-map :state)))
+        {:state
+         (->> node
+              :children
+              (filter #(envelops? rectangle %))
+              (concat state))
+         :next true})
       {:next true})))
 
 (defn insertion-visitor
@@ -45,7 +47,8 @@
       {:state node
        :stop  true}
       (if (and (not (empty? state))
-               (<= (area-enlargement-diff state shape) (area-enlargement-diff node shape)))
+               (<= (area-enlargement-diff state shape)
+                   (area-enlargement-diff node shape)))
         {:next true}
         {:state node}))))
 

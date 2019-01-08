@@ -14,13 +14,13 @@
     (let [child1 (map->Rectangle
                    {:shape [[0 50] [0 50]]
                     :leaf?  true
-                    :values [(->Point [1 1])
+                    :children [(->Point [1 1])
                                (->Point [5 5])
                                (->Rectangle [[10 15] [10 15]])]})
           child2 (map->Rectangle
                    {:shape [[50 100] [50 100]]
                     :leaf?  true
-                    :values [(->Point [60 60])
+                    :children [(->Point [60 60])
                              (->Rectangle [[55 60] [55 60]])]})
           tree (map->Rectangle
                  {:shape [[50 100] [50 100]]

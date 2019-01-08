@@ -1,5 +1,5 @@
 (ns rarbol.shape
-  (:require [rarbol.util :refer [abs]]))
+  (:require [rarbol.util :refer [abs fast-contains?]]))
 
 (defprotocol Geometry
   (dim [geom] "Dimension of the given geometry")
@@ -31,6 +31,21 @@
          (some true?)
          (nil?)
          (not))))
+
+(defmethod intersects? [Point Point]
+  [p1 p2] (= (:shape p1) (:shape p2)))
+
+(defmethod intersects? [Rectangle Point]
+  [r p]
+  (->> (interleave (:shape r) (:shape p))
+       (partition 2)
+       (map #(fast-contains? (first %) (second %)))
+       (some true?)
+       (nil?)
+       (not)))
+
+(defmethod intersects? [Point Rectangle]
+  [p r] (intersects? r p))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
@@ -109,13 +124,13 @@
 (defn compress-rectangle
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
   ([rectangle]
-   (if-let [values (:values rectangle)]
-     (assoc (apply minimum-bounding-rectangle values) :values values)
+   (if-let [children (:children rectangle)]
+     (assoc (apply minimum-bounding-rectangle children) :children children)
      rectangle))
   ([rectangle shape]
-   (let [values (conj (:values rectangle) shape)]
+   (let [children (conj (:children rectangle) shape)]
      (merge rectangle
-            (assoc (apply minimum-bounding-rectangle values) :values values))))
+            (assoc (apply minimum-bounding-rectangle children) :children children))))
   ([rectangle shape & shapes]
    (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
 
@@ -161,7 +176,7 @@
 (defn next-picks
   [r-seed l-seed shapes]
   "This function is built for the PickNext algorithm, it sorts shapes
-   by their potential seed enlargements and pre-calculates values for
+   by their potential seed enlargements and pre-calculates children for
    linear node split.
    1.) For each entry E not yet in a group, calculate area increase
        required for covering rectangle of group 1 and group 2.
@@ -176,7 +191,7 @@
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
   [seed]
-  (-> seed minimum-bounding-rectangle (assoc :values [seed])))
+  (-> seed minimum-bounding-rectangle (assoc :children [seed])))
 
 (defmulti linear-split class)
 
@@ -193,7 +208,7 @@
        Repeat 2.)"
   ; TODO: Incorporate minimum m
   ; TODO: Resolve ties by entry count as well
-  (when-let [shapes (:values r)]
+  (when-let [shapes (:children r)]
     (let [seeds (-> shapes linear-seeds :seeds)]
       (loop [r-seed (initialize-seed (first seeds))
              l-seed (initialize-seed (second seeds))
