@@ -157,7 +157,9 @@
         shapes [(->Point [18 18])
                 (->Point [36 81])
                 (->Point [0 0])
-                (->Rectangle [[0 10] [0 10]])]]
-    (is (= (:shape (->Point [0 0])) (:shape (first (next-picks r-seed l-seed shapes)))))))
-
-
+                (->Rectangle [[2 10] [2 10]])]
+        picks (next-picks r-seed l-seed shapes)]
+    (is (= (:shape (->Point [0 0]))
+           (:shape (first picks))))
+    (is (= (:shape (->Rectangle [[2 10] [2 10]]))
+           (:shape (second picks))))))
