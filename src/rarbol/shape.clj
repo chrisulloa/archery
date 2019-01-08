@@ -69,15 +69,13 @@
 (defn minimum-bounding-rectangle
   "Given a shape or collection of shapes, computes the minimum
    bounding rectangle. collect-points must be defined for a shape."
-  [shapes]
-  (let [s (if (satisfies? Geometry shapes)
-               (vector shapes) shapes)]
-    (->> s
-         (map collect-points)
-         (reduce #(map conj %1 %2))
-         (map flatten)
-         (map #(vector (reduce min %) (reduce max %)))
-         (->Rectangle))))
+  [& shapes]
+  (->> shapes
+       (map collect-points)
+       (reduce #(map conj %1 %2))
+       (map flatten)
+       (map #(vector (reduce min %) (reduce max %)))
+       (->Rectangle)))
 
 (defn shape->rectangle
   "Coerces a shape to a rectangle given its minimum boundary."
@@ -105,19 +103,19 @@
   "Difference in area of rectangle node before and after
    enlargement with a shape"
   [shape node]
-  (- (area (minimum-bounding-rectangle [shape node]))
+  (- (area (minimum-bounding-rectangle shape node))
      (area node)))
 
 (defn compress-rectangle
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
   ([rectangle]
    (if-let [values (:values rectangle)]
-     (assoc (minimum-bounding-rectangle values) :values values)
+     (assoc (apply minimum-bounding-rectangle values) :values values)
      rectangle))
   ([rectangle shape]
    (let [values (conj (:values rectangle) shape)]
      (merge rectangle
-            (assoc (minimum-bounding-rectangle values) :values values))))
+            (assoc (apply minimum-bounding-rectangle values) :values values))))
   ([rectangle shape & shapes]
     (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
 

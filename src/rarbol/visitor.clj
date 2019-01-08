@@ -3,8 +3,7 @@
             [rarbol.shape :refer [area-enlargement-diff
                                   area
                                   envelops?
-                                  intersects?
-                                  minimum-bounding-rectangle]]
+                                  intersects?]]
             [rarbol.util :refer [fast-contains?]]))
 
 (defn leaf-visitor

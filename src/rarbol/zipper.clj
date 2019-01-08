@@ -16,7 +16,7 @@
 (defmulti make-node (fn [node children] (class node)))
 
 (defmethod make-node Rectangle [r children]
-  (let [bounds (minimum-bounding-rectangle children)]
+  (let [bounds (apply minimum-bounding-rectangle children)]
     (assoc (->Rectangle bounds) :children children)))
 
 (defn zipper [node]
