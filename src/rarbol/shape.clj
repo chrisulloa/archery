@@ -211,7 +211,7 @@
        the minimum m, assign them and stop.
    3.) Invoke PickNext to choose the next entry to assign. Add it to the
        group whose covering rectangle will have to be enlarged the least
-       to accomodate it. Resolve ties by adding the entry to the group with
+       to accommodate it. Resolve ties by adding the entry to the group with
        the smaller area, then to the one with fewer entries, then to either.
        Repeat 2.)"
   ; TODO: Incorporate minimum m
