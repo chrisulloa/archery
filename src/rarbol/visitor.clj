@@ -94,24 +94,24 @@
 (defn insert-visitor
   ([shape]
    (insert-visitor shape nil))
-  ([shape m]
+  ([shape max-children]
    (fn [node state]
      (when-not (:inserted? state)
        (if (or (nil? (:next-node state))
                (= node (:next-node state)))
          (if (:leaf? node)
-           {:node  (if (<= (or m 50) (count (:children node)))
+           {:node  (if (<= (or max-children 50) (count (:children node)))
                      (linear-split (compress-rectangle node shape))
                      (compress-rectangle node shape))
             :state {:inserted? true},
             :next  true}
            {:next  false
             :state {:next-node (min-node (:children node) shape)}})
-         {:next true}))))
+         {:next true})))))
 
-  (defn insert
-    ([node shape]
-     (:node (tree-inserter (zipper node) [(insert-visitor shape 2)
-                                          adjust-node-visitor])))
-    ([node shape & shapes]
-     (reduce insert (insert node shape) shapes))))
+(defn insert
+  ([node shape]
+   (:node (tree-inserter (zipper node) [(insert-visitor shape)
+                                        adjust-node-visitor])))
+  ([node shape & shapes]
+   (reduce insert (insert node shape) shapes)))
