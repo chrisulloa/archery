@@ -121,6 +121,14 @@
   (- (area (minimum-bounding-rectangle shape node))
      (area node)))
 
+(defn best-shape-for-insert
+  [shapes shape-to-insert]
+  (some->> shapes
+           (map #(hash-map :node %
+                           :diff (area-enlargement-diff % shape-to-insert)))
+           (apply (partial min-key :diff))
+           (:node)))
+
 (defn compress-rectangle
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
   ([rectangle]
