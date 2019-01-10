@@ -20,7 +20,7 @@
 (defmulti make-node (fn [node children] (class node)))
 
 (defmethod make-node Rectangle [r children]
-  (assoc (apply compress-rectangle r children) :children children))
+  (assoc r :children children))
 
 (defn zipper [node]
   (zip/zipper branch? children make-node node))
@@ -58,32 +58,6 @@
          {:node (zip/root new-loc) :state new-state}
          (recur next-loc new-state))))))
 
-(defn min-node
-  [nodes shape]
-  (some->> nodes
-           (map #(hash-map :node % :diff (area-enlargement-diff % shape)))
-           (apply (partial min-key :diff))
-           (:node)))
-
-(defn insert-visitor
-  ([shape]
-   (insert-visitor shape nil))
-  ([shape m]
-   (fn [node state]
-     (let [max-children (or m 50)]
-       (when-not (:inserted? state)
-         (if (or (nil? (:next-node state))
-                 (= node (:next-node state)))
-           (if (:leaf? node)
-             {:node  (if (<= max-children (count (:children node)))
-                       (linear-split (compress-rectangle node shape))
-                       (compress-rectangle node shape))
-              :state {:inserted? true},
-              :next  true}
-             {:next  false
-              :state {:next-node (min-node (:children node) shape)}})
-           {:next true}))))))
-
 (defn tree-inserter
   ([zipper visitors]
    (tree-inserter zipper nil visitors))
@@ -104,8 +78,3 @@
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))
 
-(defn insert
-  ([node shape]
-   (:node (tree-inserter (zipper node) [(insert-visitor shape 1)])))
-  ([node shape & shapes]
-    (reduce insert (insert node shape) shapes)))

@@ -1,6 +1,8 @@
 (ns rarbol.visitor
-  (:require [rarbol.zipper :refer [tree-visitor zipper]]
+  (:require [rarbol.zipper :refer [tree-visitor tree-inserter zipper]]
             [rarbol.shape :refer [area-enlargement-diff
+                                  linear-split
+                                  compress-rectangle
                                   area
                                   envelops?
                                   intersects?]]
@@ -76,3 +78,41 @@
   "Finds node that is best suited for insertion of shape."
   [node shape]
   (:state (tree-visitor (zipper node) [(insertion-visitor shape)])))
+
+(defn min-node
+  [nodes shape]
+  (some->> nodes
+           (map #(hash-map :node % :diff (area-enlargement-diff % shape)))
+           (apply (partial min-key :diff))
+           (:node)))
+
+(defn adjust-node-visitor
+  [node state]
+  (when (:inserted? state)
+    {:node (compress-rectangle node)}))
+
+(defn insert-visitor
+  ([shape]
+   (insert-visitor shape nil))
+  ([shape m]
+   (fn [node state]
+     (let [max-children (or m 50)]
+       (when-not (:inserted? state)
+         (if (or (nil? (:next-node state))
+                 (= node (:next-node state)))
+           (if (:leaf? node)
+             {:node  (if (<= max-children (count (:children node)))
+                       (linear-split (compress-rectangle node shape))
+                       (compress-rectangle node shape))
+              :state {:inserted? true},
+              :next  true}
+             {:next  false
+              :state {:next-node (min-node (:children node) shape)}})
+           {:next true}))))))
+
+(defn insert
+  ([node shape]
+   (:node (tree-inserter (zipper node) [(insert-visitor shape 2)
+                                        adjust-node-visitor])))
+  ([node shape & shapes]
+   (reduce insert (insert node shape) shapes)))
