@@ -23,7 +23,7 @@
                     :children [(->Point [60 60])
                                (->Rectangle [[55 60] [55 60]])]})
           tree (map->Rectangle
-                 {:shape    [[50 100] [50 100]]
+                 {:shape    [[0 100] [0 100]]
                   :children [child1 child2]})]
       (is (= #{child1 child2} (set (leaf-collector tree))))
       (is (= child2 (insertion-finder tree (->Rectangle [[65 70] [65 70]]))))

@@ -125,7 +125,7 @@
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
   ([rectangle]
    (if-let [children (:children rectangle)]
-     (assoc (apply minimum-bounding-rectangle children) :children children)
+     (merge rectangle (apply minimum-bounding-rectangle children))
      rectangle))
   ([rectangle shape]
    (let [children (conj (:children rectangle) shape)]
@@ -190,16 +190,26 @@
        required for covering rectangle of group 1 and group 2.
    2.) Choose the entry with the maximum difference between area
         increases d1 and d2."
-  (->> shapes
-       (map (fn [shape]
-              (merge shape
-                     (shape->seed-delta shape r-seed l-seed))))
-       (sort-by :diff >)))
+  (when-not (empty? shapes)
+    (->> shapes
+         (map (fn [shape]
+                (merge shape
+                       (shape->seed-delta shape r-seed l-seed))))
+         (sort-by :diff >))))
 
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
   [seed]
-  (-> seed minimum-bounding-rectangle (assoc :children [seed])))
+  (-> seed
+      minimum-bounding-rectangle
+      (assoc :leaf? true :children [seed])))
+
+(defn initialized-shapes
+  [init-r-seed init-l-seed shapes]
+  (some->> shapes
+           (remove #{(-> init-r-seed :children first)
+                     (-> init-l-seed :children first)})
+           (next-picks init-r-seed init-l-seed)))
 
 (defmulti linear-split class)
 
@@ -220,20 +230,18 @@
     (let [seeds (linear-seeds shapes)]
       (loop [r-seed (initialize-seed (first seeds))
              l-seed (initialize-seed (second seeds))
-             sorted-shapes (some->> shapes
-                                    (remove #{r-seed l-seed})
-                                    (next-picks l-seed r-seed))]
-        (if-not (empty? sorted-shapes)
-          (let [{:keys [next-seed enlarged-seed]} (first sorted-shapes)]
+             [shape & sorted-shapes] (initialized-shapes r-seed l-seed shapes)]
+        (if-not (nil? shape)
+          (let [{:keys [next-seed enlarged-seed]} shape]
             (if (= next-seed :r-seed)
               (recur enlarged-seed
                      l-seed
                      (next-picks enlarged-seed
                                  l-seed
-                                 (rest sorted-shapes)))
+                                 sorted-shapes))
               (recur r-seed
                      enlarged-seed
                      (next-picks r-seed
                                  enlarged-seed
-                                 (rest sorted-shapes)))))
-          [r-seed l-seed])))))
+                                 sorted-shapes))))
+          (compress-rectangle (->Rectangle [[0 0] [0 0]]) r-seed l-seed))))))
