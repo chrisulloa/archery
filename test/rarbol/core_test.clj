@@ -128,9 +128,11 @@
   (let [point-seed (->Point [15 30])
         rectangle-seed (->Rectangle [[15 30] [35 45]])]
     (is (= (map->Rectangle {:shape [[15 15] [30 30]]
+                            :leaf? true
                             :children [point-seed]})
            (initialize-seed point-seed)))
     (is (= (map->Rectangle {:shape [[15 30] [35 45]]
+                            :leaf? true
                             :children [rectangle-seed]})
            (initialize-seed rectangle-seed)))))
 
