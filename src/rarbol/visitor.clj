@@ -81,9 +81,12 @@
   (:state (tree-visitor (zipper node) [(insertion-visitor shape)])))
 
 (defn adjust-node-visitor
-  [node state]
-  (when (:inserted? state)
-    {:node (compress-rectangle node)}))
+  [max-children]
+  (fn [node state]
+    (when (:inserted? state)
+      {:node (if (< (or max-children 50) (count (:children node)))
+               (linear-split (compress-rectangle node))
+               (compress-rectangle node))})))
 
 (defn insert-visitor
   ([shape]
@@ -106,6 +109,6 @@
 (defn insert
   ([node shape]
    (:node (tree-inserter (zipper node) [(insert-visitor shape 2)
-                                        adjust-node-visitor])))
+                                        (adjust-node-visitor 2)])))
   ([node shape & shapes]
    (reduce insert (insert node shape) shapes)))

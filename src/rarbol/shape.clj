@@ -207,10 +207,10 @@
 
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
-  [seed]
+  [seed leaf?]
   (-> seed
       minimum-bounding-rectangle
-      (assoc :leaf? true :children [seed])))
+      (assoc :leaf? leaf? :children [seed])))
 
 (defn initialized-shapes
   [init-r-seed init-l-seed shapes]
@@ -236,8 +236,8 @@
   ; TODO: Resolve ties by entry count as well
   (when-let [shapes (:children r)]
     (let [seeds (linear-seeds shapes)]
-      (loop [r-seed (initialize-seed (first seeds))
-             l-seed (initialize-seed (second seeds))
+      (loop [r-seed (initialize-seed (first seeds) (true? (:leaf? r)))
+             l-seed (initialize-seed (second seeds) (true? (:leaf? r)))
              [shape & sorted-shapes] (initialized-shapes r-seed l-seed shapes)]
         (if-not (nil? shape)
           (let [{:keys [next-seed enlarged-seed]} shape]
