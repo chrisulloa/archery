@@ -26,9 +26,6 @@
                  {:shape    [[0 100] [0 100]]
                   :children [child1 child2]})]
       (is (= #{child1 child2} (set (leaf-collector tree))))
-      (is (= child2 (insertion-finder tree (->Rectangle [[65 70] [65 70]]))))
-      (is (= child1 (insertion-finder tree (->Point [-5 -5]))))
-      (is (= child2 (insertion-finder tree (->Rectangle [[110 115] [110 115]]))))
       (is (= child1 (node-contains-shape-finder tree (->Point [1 1]))))
       (is (= child2 (node-contains-shape-finder tree (->Rectangle [[55 60] [55 60]]))))
       (is (= nil (node-contains-shape-finder tree (->Point [300 300]))))
@@ -130,38 +127,19 @@
     (is (= (map->Rectangle {:shape [[15 15] [30 30]]
                             :leaf? true
                             :children [point-seed]})
-           (initialize-seed point-seed)))
+           (initialize-seed point-seed true)))
     (is (= (map->Rectangle {:shape [[15 30] [35 45]]
                             :leaf? true
                             :children [rectangle-seed]})
-           (initialize-seed rectangle-seed)))))
+           (initialize-seed rectangle-seed true)))))
 
-(deftest test-shape->seed-delta
+(deftest test-shape->seed
   (let [l-seed (map->Rectangle {:children [(->Point [15 30])]
                                 :shape [[15 15] [30 30]]})
         r-seed (map->Rectangle {:children [(->Rectangle [[35 55] [80 85]])]
                                 :shape [[35 55] [80 85]]})
         shape (->Point [18 18])]
-    (is (= {:diff          2343
-            :next-seed     :l-seed
+    (is (= {:next-seed     :l-seed
             :enlarged-seed (map->Rectangle {:shape    [[15 18] [18 30]]
                                             :children [(->Point [15 30]) shape]})}
-           (shape->seed-delta shape r-seed l-seed)))))
-
-(deftest test-next-picks
-  (testing "Orders the shapes based on (abs (- d1 d2)) where
-            di is the difference in area the entry would create on ith
-            rectangle node.")
-  (let [l-seed (map->Rectangle {:children [(->Point [15 30])]
-                                :shape [[15 15] [30 30]]})
-        r-seed (map->Rectangle {:children [(->Rectangle [[35 55] [80 85]])]
-                                :shape [[35 55] [80 85]]})
-        shapes [(->Point [18 18])
-                (->Point [36 81])
-                (->Point [0 0])
-                (->Rectangle [[2 10] [2 10]])]
-        picks (next-picks r-seed l-seed shapes)]
-    (is (= (:shape (->Point [0 0]))
-           (:shape (first picks))))
-    (is (= (:shape (->Rectangle [[2 10] [2 10]]))
-           (:shape (second picks))))))
+           (shape->seed shape r-seed l-seed)))))

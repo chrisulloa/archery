@@ -5,22 +5,20 @@
                                   linear-split
                                   compress-rectangle
                                   ->Rectangle]])
-  (:import [rarbol.shape Rectangle]))
+  (:import [rarbol.shape Rectangle Point]))
 
-(defmulti branch? class)
+(defprotocol TreeNode
+  (branch? [node] "Can this node have children?")
+  (children [node] "Children of node.")
+  (make-node [node children] "Makes new node from existing node and new children."))
 
-(defmethod branch? :default [_] false)
+(extend-type Point TreeNode
+  (branch? [_] false))
 
-(defmethod branch? Rectangle [r] true)
-
-(defmulti children class)
-
-(defmethod children Rectangle [r] (:children r))
-
-(defmulti make-node (fn [node children] (class node)))
-
-(defmethod make-node Rectangle [r children]
-  (assoc r :children children))
+(extend-type Rectangle TreeNode
+  (branch? [_] true)
+  (children [node] (:children node))
+  (make-node [node children] (assoc node :children children)))
 
 (defn zipper [node]
   (zip/zipper branch? children make-node node))

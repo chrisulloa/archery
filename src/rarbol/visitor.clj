@@ -42,19 +42,6 @@
          :next true})
       {:next true})))
 
-(defn insertion-visitor
-  "Visitor that returns the best node for insertion of given shape."
-  [shape]
-  (fn [node state]
-    (when (:leaf? node)
-      {:state node
-       :stop  true}
-      (if (and (not (empty? state))
-               (<= (area-enlargement-diff state shape)
-                   (area-enlargement-diff node shape)))
-        {:next true}
-        {:state node}))))
-
 (defn leaf-collector
   "Collect all leaf nodes."
   [node]
@@ -75,18 +62,14 @@
     (tree-visitor
       (zipper node) [(enveloped-shapes-visitor rectangle)])))
 
-(defn insertion-finder
-  "Finds node that is best suited for insertion of shape."
-  [node shape]
-  (:state (tree-visitor (zipper node) [(insertion-visitor shape)])))
-
 (defn adjust-node-visitor
-  [max-children]
-  (fn [node state]
-    (when (:inserted? state)
-      {:node (if (< (or max-children 50) (count (:children node)))
-               (linear-split (compress-rectangle node))
-               (compress-rectangle node))})))
+  ([] (adjust-node-visitor nil))
+  ([max-children]
+   (fn [node state]
+     (when (:inserted? state)
+       {:node (if (< (or max-children 50) (count (:children node)))
+                (linear-split (compress-rectangle node))
+                (compress-rectangle node))}))))
 
 (defn insert-visitor
   ([shape]
@@ -95,7 +78,7 @@
    (fn [node state]
      (when-not (:inserted? state)
        (if (or (nil? (:next-node state))
-               (= node (:next-node state)))
+               (= (:shape node) (:shape (:next-node state))))
          (if (:leaf? node)
            {:node  (if (<= (or max-children 50) (count (:children node)))
                      (linear-split (compress-rectangle node shape))
@@ -106,9 +89,9 @@
             :state {:next-node (best-shape-for-insert (:children node) shape)}})
          {:next true})))))
 
-(defn insert
+(defn tree-insert
   ([node shape]
-   (:node (tree-inserter (zipper node) [(insert-visitor shape 2)
-                                        (adjust-node-visitor 2)])))
+   (:node (tree-inserter (zipper node) [(insert-visitor shape)
+                                        (adjust-node-visitor)])))
   ([node shape & shapes]
-   (reduce insert (insert node shape) shapes)))
+   (reduce tree-insert (tree-insert node shape) shapes)))

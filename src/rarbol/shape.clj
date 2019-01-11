@@ -1,5 +1,5 @@
 (ns rarbol.shape
-  (:require [rarbol.util :refer [abs fast-contains?]]))
+  (:require [rarbol.util :refer [abs fast-contains? distinct-by]]))
 
 (defprotocol Geometry
   (dim [geom] "Dimension of the given geometry")
@@ -15,37 +15,6 @@
   Geometry
   (dim [_] (count shape))
   (area [_] 0))
-
-(defmulti intersects?
-          (fn [x y] [(class x) (class y)]))
-
-(defmethod intersects? [Rectangle Rectangle]
-  [r1 r2]
-  (letfn [(intersects-by-dim?
-            [[r1p r2p]]
-            (not (or (> (first r1p) (second r2p))
-                     (> (first r2p) (second r1p)))))]
-    (->> (interleave (:shape r1) (:shape r2))
-         (partition 2)
-         (map intersects-by-dim?)
-         (some true?)
-         (nil?)
-         (not))))
-
-(defmethod intersects? [Point Point]
-  [p1 p2] (= (:shape p1) (:shape p2)))
-
-(defmethod intersects? [Rectangle Point]
-  [r p]
-  (->> (interleave (:shape r) (:shape p))
-       (partition 2)
-       (map #(fast-contains? (first %) (second %)))
-       (some true?)
-       (nil?)
-       (not)))
-
-(defmethod intersects? [Point Rectangle]
-  [p r] (intersects? r p))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
@@ -69,10 +38,35 @@
          (map envelops-by-dim?)
          (every? true?))))
 
-(defmethod envelops? [Point Point] [p1 p2] (= (:shape p1) (:shape p2)))
+(defmethod envelops? [Point Point]
+  [p1 p2] (= (:shape p1) (:shape p2)))
 
-; Collects shape points along dimensions for calculating
-; minimum bounding rectangle."
+(defmulti intersects?
+          (fn [x y] [(class x) (class y)]))
+
+(defmethod intersects? [Rectangle Rectangle]
+  [r1 r2]
+  (letfn [(intersects-by-dim?
+            [[r1p r2p]]
+            (not (or (> (first r1p) (second r2p))
+                     (> (first r2p) (second r1p)))))]
+    (->> (interleave (:shape r1) (:shape r2))
+         (partition 2)
+         (map intersects-by-dim?)
+         (some true?)
+         (nil?)
+         (not))))
+
+(defmethod intersects? [Point Point]
+  [p1 p2] (= (:shape p1) (:shape p2)))
+
+(defmethod intersects? [Rectangle Point]
+  [r p]
+  (envelops? r p))
+
+(defmethod intersects? [Point Rectangle]
+  [p r] (intersects? r p))
+
 (defmulti collect-points class)
 
 (defmethod collect-points Rectangle [geom]
@@ -99,21 +93,6 @@
     shape
     (minimum-bounding-rectangle shape)))
 
-(defn augment-shape
-  "Augments a shape by creating a map of sides along a dimension.
-    e.g. (->Rectangle [[0 10] [5 15]]) => {0 [0 5] 1, [10 15]}
-         (->Point [10 30]) => {0 [10 30], 1 [30 30}
-   For use in calculating highest-low-side, lowest-high-side, etc."
-  [shape]
-  (assoc shape :augmented (zipmap (range (dim shape))
-                                  (collect-points (shape->rectangle shape)))))
-
-(defn augmented-key-getter
-  "Retrieves the (first or second) position along a
-   dimension of an augmented shape."
-  [position dimension]
-  (fn [shape] (-> shape :augmented (get dimension) position)))
-
 (defn area-enlargement-diff
   "Difference in area of rectangle node before and after
    enlargement with a shape"
@@ -124,6 +103,7 @@
 (defn best-shape-for-insert
   [shapes shape-to-insert]
   (some->> shapes
+           (map #(dissoc % :children))
            (map #(hash-map :node %
                            :diff (area-enlargement-diff % shape-to-insert)))
            (apply (partial min-key :diff))
@@ -142,9 +122,34 @@
   ([rectangle shape & shapes]
    (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
 
+(defrecord RTree [tree dimension max-children min-children])
+
+
+(defn rtree
+  ([]
+   (map->RTree
+     {:tree (map->Rectangle {:shape [], :leaf? true}), :max-children 50, :min-children 1, :dimension 2}))
+  ([params]
+   (merge (rtree) params)))
+
+;TODO: CLEAN UP THIS GOD AWFUL MESS
+(defn augment-shape
+  "Augments a shape by creating a map of sides along a dimension.
+    e.g. (->Rectangle [[0 10] [5 15]]) => {0 [0 5] 1, [10 15]}
+         (->Point [10 30]) => {0 [10 30], 1 [30 30}
+   For use in calculating highest-low-side, lowest-high-side, etc."
+  [shape]
+  (assoc shape :augmented (zipmap (range (dim shape))
+                                  (collect-points (shape->rectangle shape)))))
+
+(defn augmented-key-getter
+  "Retrieves the (first or second) position along a
+   dimension of an augmented shape."
+  [position dimension]
+  (fn [shape] (-> shape :augmented (get dimension) position)))
+
 (defn linear-seeds-across-dimensions
   [shapes]
-  ;TODO: Make this easier to read
   (let [dimensions (dim (first shapes))
         reduced-shapes (map augment-shape shapes)
         min-or-max-side #(apply (partial %1 (augmented-key-getter %2 %3)) reduced-shapes)]
@@ -153,13 +158,19 @@
             lowest-low-side (min-or-max-side min-key first d)
             highest-high-side (min-or-max-side max-key second d)
             lowest-high-side (min-or-max-side min-key second d)]
-        {:dimension       d
-         :seeds           [(compress-rectangle (dissoc lowest-high-side :augmented))
-                           (compress-rectangle (dissoc highest-low-side :augmented))]
-         :norm-separation (/ (- ((augmented-key-getter first d) highest-low-side)
-                                ((augmented-key-getter second d) lowest-high-side))
-                             (- ((augmented-key-getter second d) highest-high-side)
-                                ((augmented-key-getter first d) lowest-low-side)))}))))
+        (if (= (:shape highest-low-side) (:shape lowest-high-side))
+          (let [reduced-distinct-shapes (distinct-by :shape reduced-shapes)]
+            {:dimension       d,
+             :norm-separation ##Inf,
+             :seeds           [(compress-rectangle (dissoc (first reduced-distinct-shapes) :augmented))
+                               (compress-rectangle (dissoc (second reduced-distinct-shapes) :augmented))]})
+          {:dimension       d
+           :norm-separation (/ (- ((augmented-key-getter first d) highest-low-side)
+                                  ((augmented-key-getter second d) lowest-high-side))
+                               (- ((augmented-key-getter second d) highest-high-side)
+                                  ((augmented-key-getter first d) lowest-low-side)))
+           :seeds           [(compress-rectangle (dissoc lowest-high-side :augmented))
+                             (compress-rectangle (dissoc highest-low-side :augmented))]})))))
 
 (defn linear-seeds
   "1.) Along each dimension, finds entry whose rectangle has the highest low side and
@@ -171,39 +182,15 @@
        (apply (partial max-key :norm-separation))
        (:seeds)))
 
-(defn clean-seed
-  "Removes any extra data attached to a shape during linear split."
-  [seed]
-  (dissoc seed :diff :next-seed :enlarged-seed))
-
-(defn shape->seed-delta
-  "For a given seed calculates the difference in area increase
-   between potential insertion to the two seeds."
+(defn shape->seed
   [shape r-seed l-seed]
-  (let [r-enlarged (compress-rectangle r-seed (clean-seed shape))
-        r-area-diff (- (area r-enlarged) (area r-seed))
-        l-enlarged (compress-rectangle l-seed (clean-seed shape))
-        l-area-diff (- (area l-enlarged) (area l-seed))
-        r-seed? (<= r-area-diff l-area-diff)]
-    {:diff          (abs (- r-area-diff l-area-diff))
-     :next-seed     (if r-seed? :r-seed :l-seed)
-     :enlarged-seed (if r-seed? r-enlarged l-enlarged)}))
-
-(defn next-picks
-  [r-seed l-seed shapes]
-  "This function is built for the PickNext algorithm, it sorts shapes
-   by their potential seed enlargements and pre-calculates children for
-   linear node split.
-   1.) For each entry E not yet in a group, calculate area increase
-       required for covering rectangle of group 1 and group 2.
-   2.) Choose the entry with the maximum difference between area
-        increases d1 and d2."
-  (when-not (empty? shapes)
-    (->> shapes
-         (map (fn [shape]
-                (merge shape
-                       (shape->seed-delta shape r-seed l-seed))))
-         (sort-by :diff >))))
+  (let [r-enlarged (compress-rectangle r-seed shape)
+        l-enlarged (compress-rectangle l-seed shape)
+        r-seed? (<= (- (area r-enlarged) (area r-seed))
+                    (- (area l-enlarged) (area l-seed)))]
+    (if r-seed?
+      {:next-seed :r-seed, :enlarged-seed r-enlarged}
+      {:next-seed :l-seed, :enlarged-seed l-enlarged})))
 
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
@@ -211,13 +198,6 @@
   (-> seed
       minimum-bounding-rectangle
       (assoc :leaf? leaf? :children [seed])))
-
-(defn initialized-shapes
-  [init-r-seed init-l-seed shapes]
-  (some->> shapes
-           (remove #{(-> init-r-seed :children first)
-                     (-> init-l-seed :children first)})
-           (next-picks init-r-seed init-l-seed)))
 
 (defmulti linear-split class)
 
@@ -238,18 +218,16 @@
     (let [seeds (linear-seeds shapes)]
       (loop [r-seed (initialize-seed (first seeds) (true? (:leaf? r)))
              l-seed (initialize-seed (second seeds) (true? (:leaf? r)))
-             [shape & sorted-shapes] (initialized-shapes r-seed l-seed shapes)]
+             [shape & rest-shapes] (remove #{(-> r-seed :children first)
+                                             (-> l-seed :children first)} shapes)]
         (if-not (nil? shape)
-          (let [{:keys [next-seed enlarged-seed]} shape]
+          (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
             (if (= next-seed :r-seed)
               (recur enlarged-seed
                      l-seed
-                     (next-picks enlarged-seed
-                                 l-seed
-                                 sorted-shapes))
+                     rest-shapes)
               (recur r-seed
                      enlarged-seed
-                     (next-picks r-seed
-                                 enlarged-seed
-                                 sorted-shapes))))
+                     rest-shapes)))
           (compress-rectangle (->Rectangle [[0 0] [0 0]]) r-seed l-seed))))))
+
