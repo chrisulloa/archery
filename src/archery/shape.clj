@@ -86,6 +86,10 @@
        (map #(vector (reduce min %) (reduce max %)))
        (->Rectangle true nil)))
 
+(defn simple-rectangle
+  [shape]
+  (map->Rectangle {:shape shape}))
+
 (defn shape->rectangle
   "Coerces a shape to a rectangle given its minimum boundary."
   [shape]
@@ -127,7 +131,7 @@
 (defn rtree
   ([]
    (map->RTree
-     {:tree (->Rectangle true nil []), :max-children 50, :min-children 1, :dimension 2}))
+     {:tree (map->Rectangle {:leaf? true}), :max-children 50, :min-children 1, :dimension 2}))
   ([params]
    (merge (rtree) params)))
 
@@ -215,4 +219,4 @@
               (recur r-seed
                      enlarged-seed
                      rest-shapes)))
-          (compress-rectangle (->Rectangle true nil [[0 0] [0 0]]) r-seed l-seed))))))
+          (compress-rectangle (map->Rectangle {:leaf? true :shape [[0 0] [0 0]]}) r-seed l-seed))))))
