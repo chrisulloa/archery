@@ -124,7 +124,6 @@
 
 (defrecord RTree [tree dimension max-children min-children])
 
-
 (defn rtree
   ([]
    (map->RTree
@@ -142,7 +141,7 @@
   (assoc shape :augmented (zipmap (range (dim shape))
                                   (collect-points (shape->rectangle shape)))))
 
-(defn augmented-key-getter
+(defn augmented-val
   "Retrieves the (first or second) position along a
    dimension of an augmented shape."
   [position dimension]
@@ -152,25 +151,25 @@
   [shapes]
   (let [dimensions (dim (first shapes))
         reduced-shapes (map augment-shape shapes)
-        min-or-max-side #(apply (partial %1 (augmented-key-getter %2 %3)) reduced-shapes)]
+        min-or-max-side #(apply (partial %1 (augmented-val %2 %3)) reduced-shapes)]
     (for [d (range dimensions)]
-      (let [highest-low-side (min-or-max-side max-key first d)
-            lowest-low-side (min-or-max-side min-key first d)
-            highest-high-side (min-or-max-side max-key second d)
-            lowest-high-side (min-or-max-side min-key second d)]
-        (if (= (:shape highest-low-side) (:shape lowest-high-side))
+      (let [max-lb (min-or-max-side max-key first d)
+            min-lb (min-or-max-side min-key first d)
+            max-ub (min-or-max-side max-key second d)
+            min-ub (min-or-max-side min-key second d)]
+        (if (= (:shape max-lb) (:shape min-ub))
           (let [reduced-distinct-shapes (distinct-by :shape reduced-shapes)]
             {:dimension       d,
              :norm-separation ##Inf,
              :seeds           [(compress-rectangle (dissoc (first reduced-distinct-shapes) :augmented))
                                (compress-rectangle (dissoc (second reduced-distinct-shapes) :augmented))]})
           {:dimension       d
-           :norm-separation (/ (- ((augmented-key-getter first d) highest-low-side)
-                                  ((augmented-key-getter second d) lowest-high-side))
-                               (- ((augmented-key-getter second d) highest-high-side)
-                                  ((augmented-key-getter first d) lowest-low-side)))
-           :seeds           [(compress-rectangle (dissoc lowest-high-side :augmented))
-                             (compress-rectangle (dissoc highest-low-side :augmented))]})))))
+           :norm-separation (/ (- ((augmented-val first d) max-lb)
+                                  ((augmented-val second d) min-ub))
+                               (- ((augmented-val second d) max-ub)
+                                  ((augmented-val first d) min-lb)))
+           :seeds           [(compress-rectangle (dissoc min-ub :augmented))
+                             (compress-rectangle (dissoc max-lb :augmented))]})))))
 
 (defn linear-seeds
   "1.) Along each dimension, finds entry whose rectangle has the highest low side and

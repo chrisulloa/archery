@@ -85,8 +85,8 @@
     (is (= {0 [10 15], 1 [35 40]}
            (:augmented (augment-shape (->Rectangle [[10 15] [35 40]])))))))
 
-(deftest test-augmented-key-getter
-  (is (= 10 ((augmented-key-getter second 2)
+(deftest test-augmented-val
+  (is (= 10 ((augmented-val second 2)
               (augment-shape (->Rectangle [[10 15] [3 5] [0 10]]))))))
 
 (deftest test-area-enlargement-diff

@@ -85,8 +85,7 @@
                      (compress-rectangle node shape))
             :state {:inserted? true},
             :next  true}
-           {:next  false
-            :state {:next-node (best-shape-for-insert (:children node) shape)}})
+           {:state {:next-node (best-shape-for-insert (:children node) shape)}})
          {:next true})))))
 
 (defn tree-insert

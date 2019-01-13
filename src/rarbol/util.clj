@@ -35,3 +35,14 @@
                            (cons x (step (rest s) (conj seen fx)))))))
                     xs seen)))]
      (step coll #{}))))
+
+(defn fast-min-by
+  [f short-circuit-val coll]
+  (loop [[val & rest-vals] coll
+         min-val {:val val, :f-val ##Inf}]
+    (let [f-val (f val)]
+      (if (or (empty? rest-vals) (= f-val short-circuit-val))
+        (:val min-val)
+        (if (< f-val (:f-val min-val))
+          (recur rest-vals {:val val :f-val f-val})
+          (recur rest-vals min-val))))))
