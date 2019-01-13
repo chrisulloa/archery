@@ -75,4 +75,3 @@
        (if (or (nil? next-loc) (zip/end? next-loc) (= stop true))
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))
-

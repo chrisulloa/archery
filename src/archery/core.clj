@@ -7,12 +7,6 @@
            (com.github.davidmoten.rtree.geometry Geometries))
   (:gen-class))
 
-(defn insert
-  ([rt shape]
-   (update rt :tree #(tree-insert % shape)))
-  ([rt shape & shapes]
-   (reduce insert (insert rt shape) shapes)))
-
 (defn -main []
   (println "Starting benchmark: Inserting 100 rectangles into RTree {:max-children 50}")
   (let [random-shapes (fn [] (let [min-x (rand-int 500000)
@@ -20,7 +14,7 @@
                                       min-y (rand-int 500000)
                                       max-y (+ min-y (rand-int 100000))]
                                   [[min-x max-x] [min-y max-y]]))
-        sample (take 10000 (repeatedly random-shapes))
+        sample (take 1000 (repeatedly random-shapes))
         create-rectangle (fn [[[min-x max-x] [min-y max-y]]]
                            (Geometries/rectangle (double min-x)
                                                  (double min-y)

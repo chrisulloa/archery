@@ -88,9 +88,11 @@
            {:state {:next-node (best-shape-for-insert (:children node) shape)}})
          {:next true})))))
 
-(defn tree-insert
-  ([node shape]
-   (:node (tree-inserter (zipper node) [(insert-visitor shape)
-                                        (adjust-node-visitor)])))
-  ([node shape & shapes]
-   (reduce tree-insert (tree-insert node shape) shapes)))
+(defn insert
+  ([tree shape]
+   (let [max-children (:max-children tree)]
+     (update tree :tree #(:node (tree-inserter (zipper %)
+                                               [(insert-visitor shape max-children)
+                                                (adjust-node-visitor max-children)])))))
+  ([tree shape & shapes]
+   (reduce insert (insert tree shape) shapes)))

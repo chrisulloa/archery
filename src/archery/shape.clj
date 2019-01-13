@@ -172,9 +172,6 @@
                              (compress-rectangle (dissoc max-lb :augmented))]})))))
 
 (defn linear-seeds
-  "1.) Along each dimension, finds entry whose rectangle has the highest low side and
-       the lowest high side, calculating the normalized separation for each dimension.
-   2.)  Chooses the pair with the greatest normalized separation"
   [shapes]
   (->> shapes
        linear-seeds-across-dimensions
@@ -201,16 +198,6 @@
 (defmulti linear-split class)
 
 (defmethod linear-split Rectangle [r]
-  "1.) Apply algorithm PickSeeds to choose two entries to be first
-       elements of the two new nodes.
-   2.) If all groups have been assigned stop. If one group has so few
-       entries that all the rest must be assigned to it for it to have
-       the minimum m, assign them and stop.
-   3.) Invoke PickNext to choose the next entry to assign. Add it to the
-       group whose covering rectangle will have to be enlarged the least
-       to accommodate it. Resolve ties by adding the entry to the group with
-       the smaller area, then to the one with fewer entries, then to either.
-       Repeat 2.)"
   ; TODO: Incorporate minimum m
   ; TODO: Resolve ties by entry count as well
   (when-let [shapes (:children r)]
@@ -229,4 +216,3 @@
                      enlarged-seed
                      rest-shapes)))
           (compress-rectangle (->Rectangle [[0 0] [0 0]]) r-seed l-seed))))))
-
