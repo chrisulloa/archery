@@ -3,8 +3,7 @@
             [archery.shape :refer [minimum-bounding-rectangle
                                   area-enlargement-diff
                                   linear-split
-                                  compress-rectangle
-                                  ->Rectangle]])
+                                  compress-rectangle]])
   (:import [archery.shape Rectangle Point]))
 
 (defprotocol TreeNode

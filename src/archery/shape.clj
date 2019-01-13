@@ -5,7 +5,7 @@
   (dim [geom] "Dimension of the given geometry")
   (area [geom] "Area of the given geometry"))
 
-(defrecord Rectangle [shape]
+(defrecord Rectangle [leaf? children shape]
   Geometry
   (dim [_] (count shape))
   (area [_]
@@ -84,7 +84,7 @@
        (reduce #(map conj %1 %2))
        (map flatten)
        (map #(vector (reduce min %) (reduce max %)))
-       (->Rectangle)))
+       (->Rectangle true nil)))
 
 (defn shape->rectangle
   "Coerces a shape to a rectangle given its minimum boundary."
@@ -127,7 +127,7 @@
 (defn rtree
   ([]
    (map->RTree
-     {:tree (map->Rectangle {:shape [], :leaf? true}), :max-children 50, :min-children 1, :dimension 2}))
+     {:tree (->Rectangle true nil []), :max-children 50, :min-children 1, :dimension 2}))
   ([params]
    (merge (rtree) params)))
 
@@ -215,4 +215,4 @@
               (recur r-seed
                      enlarged-seed
                      rest-shapes)))
-          (compress-rectangle (->Rectangle [[0 0] [0 0]]) r-seed l-seed))))))
+          (compress-rectangle (->Rectangle true nil [[0 0] [0 0]]) r-seed l-seed))))))
