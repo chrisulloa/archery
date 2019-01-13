@@ -1,4 +1,4 @@
-(ns rarbol.util)
+(ns archery.util)
 
 (defn fast-contains?
   "Does an item contain a collection? Short circuits on first match."

@@ -1,11 +1,10 @@
-(ns rarbol.core
-  (:require [rarbol.shape :refer :all]
-            [rarbol.zipper :refer :all]
-            [rarbol.visitor :refer :all]
-            [rarbol.util :refer :all])
+(ns archery.core
+  (:require [archery.shape :refer :all]
+            [archery.zipper :refer :all]
+            [archery.visitor :refer :all]
+            [archery.util :refer :all])
   (:import (com.github.davidmoten.rtree RTree)
-           (com.github.davidmoten.rtree.geometry Geometries)
-           (com.github.davidmoten.grumpy.core Position))
+           (com.github.davidmoten.rtree.geometry Geometries))
   (:gen-class))
 
 (defn insert

@@ -1,9 +1,9 @@
-(ns rarbol.core-test
+(ns archery.core-test
   (:require [clojure.test :refer :all]
-            [rarbol.core :refer :all]
-            [rarbol.shape :refer :all]
-            [rarbol.util :refer :all]
-            [rarbol.visitor :refer :all]))
+            [archery.core :refer :all]
+            [archery.shape :refer :all]
+            [archery.util :refer :all]
+            [archery.visitor :refer :all]))
 
 (deftest test-fast-contains?
   (testing "Fast contains function."

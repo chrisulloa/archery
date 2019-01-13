@@ -1,5 +1,5 @@
-(ns rarbol.shape
-  (:require [rarbol.util :refer [abs fast-contains? distinct-by]]))
+(ns archery.shape
+  (:require [archery.util :refer [abs fast-contains? distinct-by]]))
 
 (defprotocol Geometry
   (dim [geom] "Dimension of the given geometry")

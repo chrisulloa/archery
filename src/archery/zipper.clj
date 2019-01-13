@@ -1,11 +1,11 @@
-(ns rarbol.zipper
+(ns archery.zipper
   (:require [clojure.zip :as zip]
-            [rarbol.shape :refer [minimum-bounding-rectangle
+            [archery.shape :refer [minimum-bounding-rectangle
                                   area-enlargement-diff
                                   linear-split
                                   compress-rectangle
                                   ->Rectangle]])
-  (:import [rarbol.shape Rectangle Point]))
+  (:import [archery.shape Rectangle Point]))
 
 (defprotocol TreeNode
   (branch? [node] "Can this node have children?")

@@ -1,13 +1,13 @@
-(ns rarbol.visitor
-  (:require [rarbol.zipper :refer [tree-visitor tree-inserter zipper]]
-            [rarbol.shape :refer [area-enlargement-diff
+(ns archery.visitor
+  (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
+            [archery.shape :refer [area-enlargement-diff
                                   best-shape-for-insert
                                   linear-split
                                   compress-rectangle
                                   area
                                   envelops?
                                   intersects?]]
-            [rarbol.util :refer [fast-contains?]]))
+            [archery.util :refer [fast-contains?]]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
