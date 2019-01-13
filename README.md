@@ -1,4 +1,4 @@
-# rarbol
+# archery
 
 rtree implementation in Clojure, using functional zippers.
 
