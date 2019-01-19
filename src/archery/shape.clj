@@ -46,12 +46,12 @@
   (children-nodes [_] (when-not leaf? children))
   (make-node [node new-children] (RectangleNode. leaf? new-children shape)))
 
-(defrecord RTree [tree dimension max-children min-children])
+(defrecord RTree [root dimension max-children min-children])
 
 (defn rtree
   ([]
    (map->RTree
-     {:tree (->RectangleNode true [] []), :max-children 50, :min-children 1, :dimension 2}))
+     {:root (->RectangleNode true [] []), :max-children 4, :min-children 2, :dimension 2}))
   ([params]
    (merge (rtree) params)))
 

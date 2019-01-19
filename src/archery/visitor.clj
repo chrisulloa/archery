@@ -84,7 +84,7 @@
 (defn insert
   ([tree shape]
    (let [max-children (:max-children tree)]
-     (update tree :tree #(:node (tree-inserter (zipper %)
+     (update tree :root #(:node (tree-inserter (zipper %)
                                                [(insert-visitor shape max-children)
                                                 (adjust-node-visitor max-children)])))))
   ([tree shape & shapes]
