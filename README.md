@@ -3,6 +3,7 @@
 rtree implementation in Clojure, using functional zippers.
 
 ## TODO
+* At the lowest level store records, for the RTree itself use datatypes (should improve performance significantly).
 * Searching
   * RadiusSearch
   * ShapeIntersects

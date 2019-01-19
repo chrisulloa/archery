@@ -1,27 +1,9 @@
 (ns archery.zipper
   (:require [clojure.zip :as zip]
-            [archery.shape :refer [minimum-bounding-rectangle
-                                  area-enlargement-diff
-                                  linear-split
-                                  compress-rectangle
-                                  ->Rectangle]])
-  (:import [archery.shape Rectangle Point]))
-
-(defprotocol TreeNode
-  (branch? [node] "Can this node have children?")
-  (children [node] "Children of node.")
-  (make-node [node children] "Makes new node from existing node and new children."))
-
-(extend-type Point TreeNode
-  (branch? [_] false))
-
-(extend-type Rectangle TreeNode
-  (branch? [_] true)
-  (children [node] (:children node))
-  (make-node [node children] (assoc node :children children)))
+            [archery.shape :refer :all]))
 
 (defn zipper [node]
-  (zip/zipper branch? children make-node node))
+  (zip/zipper branch? children-nodes make-node node))
 
 (defn visit-node
   [start-node start-state visitors]
@@ -75,4 +57,3 @@
        (if (or (nil? next-loc) (zip/end? next-loc) (= stop true))
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))
-
