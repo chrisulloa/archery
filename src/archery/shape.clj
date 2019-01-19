@@ -135,13 +135,13 @@
 
 (defmethod intersects? [RectangleNode Point]
   [rn p]
-  (envelops? (->Rectangle (.-shape rn)) p))
+  (envelops? (->Rectangle (shape rn)) p))
 
 (defmethod intersects? [Point Rectangle]
   [p r] (intersects? r p))
 
 (defmethod intersects? [Point RectangleNode]
-  [p rn] (intersects? (.-shape rn) p))
+  [p rn] (intersects? (shape rn) p))
 
 (defmulti collect-points class)
 
@@ -152,7 +152,7 @@
   (map vector (:shape geom)))
 
 (defmethod collect-points RectangleNode [rn]
-  (.-shape rn))
+  (shape rn))
 
 (defn minimum-bounding-rectangle
   "Given a shape or collection of shapes, computes the minimum
@@ -181,7 +181,7 @@
 (defn best-node-for-insertion
   [nodes shape-to-insert]
   (some->> nodes
-           (map #(hash-map :node-shape (.-shape %)
+           (map #(hash-map :node-shape (shape %)
                            :diff (area-enlargement-diff % shape-to-insert)))
            (fast-min-by :diff 0)
            (:node-shape)))
@@ -271,12 +271,12 @@
 (defmethod linear-split RectangleNode [rn]
   ; TODO: Incorporate minimum m
   ; TODO: Resolve ties by entry count as well
-  (when-let [shapes (.-children rn)]
+  (when-let [shapes (children rn)]
     (let [seeds (linear-seeds shapes)]
       (loop [r-seed (initialize-seed (first seeds) (leaf? rn))
              l-seed (initialize-seed (second seeds) (leaf? rn))
-             [shape & rest-shapes] (remove #{(-> r-seed .-children first)
-                                             (-> l-seed .-children first)} shapes)]
+             [shape & rest-shapes] (remove #{(-> r-seed children first)
+                                             (-> l-seed children first)} shapes)]
         (if-not (nil? shape)
           (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
             (if (= next-seed :r-seed)
