@@ -14,7 +14,8 @@
 (defprotocol Geometry
   (dim [geom] "Dimension of the given geometry")
   (area [geom] "Area of the given geometry")
-  (shape [geom] "The defined shape of the geometry."))
+  (shape [geom] "The defined shape of the geometry.")
+  (collect-points [geom] "Points of a given geometry."))
 
 (defrecord Rectangle [shape]
   Geometry
@@ -22,6 +23,7 @@
   (area [_]
     (apply * (map #(- (second %) (first %)) shape)))
   (shape [_] shape)
+  (collect-points [_] shape)
   TreeNode
   (branch? [_] false)
   (children [_] nil))
@@ -31,6 +33,7 @@
   (dim [_] (count shape))
   (area [_] 0)
   (shape [_] shape)
+  (collect-points [_] (map vector shape))
   TreeNode
   (branch? [_] false)
   (children [_] nil))
@@ -40,6 +43,7 @@
   (dim [_] (count shape))
   (area [_] (apply * (map #(- (second %) (first %)) shape)))
   (shape [_] shape)
+  (collect-points [_] shape)
   TreeNode
   (leaf? [_] leaf?)
   (branch? [_] true)
@@ -144,17 +148,6 @@
 
 (defmethod intersects? [Point RectangleNode]
   [p rn] (intersects? (shape rn) p))
-
-(defmulti collect-points class)
-
-(defmethod collect-points Rectangle [geom]
-  (:shape geom))
-
-(defmethod collect-points Point [geom]
-  (map vector (:shape geom)))
-
-(defmethod collect-points RectangleNode [rn]
-  (shape rn))
 
 (defn minimum-bounding-rectangle
   "Given a shape or collection of shapes, computes the minimum
