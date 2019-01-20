@@ -1,18 +1,13 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
-            [archery.shape :refer [area-enlargement-diff
-                                  best-shape-for-insert
-                                  linear-split
-                                  compress-rectangle
-                                  area
-                                  envelops?
-                                  intersects?]]
-            [archery.util :refer [fast-contains?]]))
+            [archery.shape :refer :all]
+            [archery.util :refer [fast-contains?]])
+  (:import (archery.shape RectangleNode)))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
   [node state]
-  (when (:leaf? node)
+  (when (leaf? node)
     {:state (conj state node)
      :next  true}))
 
@@ -20,12 +15,11 @@
   "Visitor that returns node which contains shape."
   [shape]
   (fn [node state]
-    (if (envelops? node shape)
-      (when (and (:leaf? node)
-                 (fast-contains? (:children node) shape))
-        {:state (conj state node)
-         :stop  true})
-      {:next true})))
+    (when (and (leaf? node)
+               (envelops? node shape)
+               (fast-contains? (children node) shape))
+      {:state node
+       :stop  true})))
 
 (defn enveloped-shapes-visitor
   "Visitor that returns shapes enveloped by given rectangle."
@@ -33,10 +27,10 @@
   (fn [node state]
     (if (or (envelops? node rectangle)
             (intersects? node rectangle))
-      (when (:leaf? node)
+      (when (leaf? node)
         {:state
                (->> node
-                    :children
+                    children
                     (filter #(envelops? rectangle %))
                     (concat state))
          :next true})
@@ -50,10 +44,9 @@
 (defn node-contains-shape-finder
   "Finds first node that contains the shape."
   [node shape]
-  (first
-    (:state
-      (tree-visitor
-        (zipper node) [(node-contains-shape-visitor shape)]))))
+  (:state
+    (tree-visitor
+      (zipper node) [(node-contains-shape-visitor shape)])))
 
 (defn enveloped-shapes-collector
   "Find entries which are enveloped by given rectangle."
@@ -63,34 +56,35 @@
       (zipper node) [(enveloped-shapes-visitor rectangle)])))
 
 (defn adjust-node-visitor
-  ([] (adjust-node-visitor nil))
-  ([max-children]
-   (fn [node state]
-     (when (:inserted? state)
-       {:node (if (< (or max-children 50) (count (:children node)))
-                (linear-split (compress-rectangle node))
-                (compress-rectangle node))}))))
+  [min-children max-children]
+  (fn [node state]
+    (when (:inserted? state)
+      {:node (if (< max-children (count-children node))
+               (linear-split (compress-node node) min-children)
+               (compress-node node))})))
 
 (defn insert-visitor
-  ([shape]
-   (insert-visitor shape nil))
-  ([shape max-children]
-   (fn [node state]
-     (when-not (:inserted? state)
-       (if (or (nil? (:next-node state))
-               (= (:shape node) (:shape (:next-node state))))
-         (if (:leaf? node)
-           {:node  (if (<= (or max-children 50) (count (:children node)))
-                     (linear-split (compress-rectangle node shape))
-                     (compress-rectangle node shape))
-            :state {:inserted? true},
-            :next  true}
-           {:state {:next-node (best-shape-for-insert (:children node) shape)}})
-         {:next true})))))
+  [shape-to-insert min-children max-children]
+  (fn [node state]
+    (when-not (:inserted? state)
+      (if (or (not (:next-node state))
+              (= (shape node) (:next-node state)))
+        (if (leaf? node)
+          {:node  (if (<= max-children (count-children node))
+                    (linear-split (compress-node node shape-to-insert)
+                                  min-children)
+                    (compress-node node shape-to-insert)),
+           :state {:inserted? true},
+           :next  true}
+          {:state {:next-node (best-node-for-insertion (children node)
+                                                       shape-to-insert)}})
+        {:next true}))))
 
-(defn tree-insert
-  ([node shape]
-   (:node (tree-inserter (zipper node) [(insert-visitor shape)
-                                        (adjust-node-visitor)])))
-  ([node shape & shapes]
-   (reduce tree-insert (tree-insert node shape) shapes)))
+(defn insert
+  ([tree shape]
+   (let [{:keys [max-children min-children]} tree]
+     (update tree :root #(:node (tree-inserter (zipper %)
+                                               [(insert-visitor shape min-children max-children)
+                                                (adjust-node-visitor min-children max-children)])))))
+  ([tree shape & shapes]
+   (reduce insert (insert tree shape) shapes)))

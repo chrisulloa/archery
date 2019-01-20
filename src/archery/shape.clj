@@ -1,24 +1,71 @@
 (ns archery.shape
-  (:require [archery.util :refer [abs fast-contains? distinct-by]]))
+  (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by]])
+  (:import (clojure.lang PersistentVector IPersistentCollection)))
+
+
+(defprotocol TreeNode
+  (leaf? [node] "Is this node a leaf?")
+  (branch? [node] "Can this node have children?")
+  (count-children [node] "Count children.")
+  (children [node] "Children of node.")
+  (children-nodes [node] "Children nodes of the node.")
+  (make-node [node children] "Makes new node from existing node and new children."))
 
 (defprotocol Geometry
   (dim [geom] "Dimension of the given geometry")
-  (area [geom] "Area of the given geometry"))
+  (area [geom] "Area of the given geometry")
+  (shape [geom] "The defined shape of the geometry.")
+  (collect-points [geom] "Points of a given geometry."))
 
 (defrecord Rectangle [shape]
   Geometry
   (dim [_] (count shape))
   (area [_]
-    (apply * (map #(- (second %) (first %)) shape))))
+    (apply * (map #(- (second %) (first %)) shape)))
+  (shape [_] shape)
+  (collect-points [_] shape)
+  TreeNode
+  (branch? [_] false)
+  (children [_] nil))
 
 (defrecord Point [shape]
   Geometry
   (dim [_] (count shape))
-  (area [_] 0))
+  (area [_] 0)
+  (shape [_] shape)
+  (collect-points [_] (map vector shape))
+  TreeNode
+  (branch? [_] false)
+  (children [_] nil))
+
+(deftype RectangleNode [leaf? children shape]
+  Geometry
+  (dim [_] (count shape))
+  (area [_] (apply * (map #(- (second %) (first %)) shape)))
+  (shape [_] shape)
+  (collect-points [_] shape)
+  TreeNode
+  (leaf? [_] leaf?)
+  (branch? [_] true)
+  (count-children [_] (count children))
+  (children [_] children)
+  (children-nodes [_] (when-not leaf? children))
+  (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
+
+(defrecord RTree [root dimension max-children min-children])
+
+(defn rtree
+  ([]
+   (map->RTree
+     {:root (->RectangleNode true [] []), :max-children 4, :min-children 2, :dimension 2}))
+  ([params]
+   (merge (rtree) params)))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
 (defmethod envelops? [Point Rectangle] [_ _] false)
+
+(defmethod envelops? [Point RectangleNode] [_ _] false)
 
 (defmethod envelops? [Rectangle Point]
   [r p]
@@ -29,6 +76,10 @@
          (map envelops-by-dim?)
          (every? true?))))
 
+(defmethod envelops? [RectangleNode Point]
+  [rn p]
+  (envelops? (->Rectangle (shape rn)) p))
+
 (defmethod envelops? [Rectangle Rectangle]
   [r1 r2]
   (letfn [(envelops-by-dim? [[[r1-min r1-max] [r2-min r2-max]]]
@@ -37,6 +88,18 @@
          (partition 2)
          (map envelops-by-dim?)
          (every? true?))))
+
+(defmethod envelops? [RectangleNode RectangleNode]
+  [rn1 rn2]
+  (envelops? (->Rectangle (shape rn1)) (->Rectangle (shape rn2))))
+
+(defmethod envelops? [RectangleNode Rectangle]
+  [rn r]
+  (envelops? (->Rectangle (shape rn)) r))
+
+(defmethod envelops? [Rectangle RectangleNode]
+  [r rn]
+  (envelops? r (->Rectangle (shape rn))))
 
 (defmethod envelops? [Point Point]
   [p1 p2] (= (:shape p1) (:shape p2)))
@@ -57,6 +120,18 @@
          (nil?)
          (not))))
 
+(defmethod intersects? [RectangleNode RectangleNode]
+  [rn1 rn2]
+  (intersects? (->Rectangle (shape rn1)) (->Rectangle (shape rn2))))
+
+(defmethod intersects? [RectangleNode Rectangle]
+  [rn r]
+  (intersects? (->Rectangle (shape rn)) r))
+
+(defmethod intersects? [Rectangle RectangleNode]
+  [r rn]
+  (intersects? (->Rectangle (shape rn)) r))
+
 (defmethod intersects? [Point Point]
   [p1 p2] (= (:shape p1) (:shape p2)))
 
@@ -64,16 +139,15 @@
   [r p]
   (envelops? r p))
 
+(defmethod intersects? [RectangleNode Point]
+  [rn p]
+  (envelops? (->Rectangle (shape rn)) p))
+
 (defmethod intersects? [Point Rectangle]
   [p r] (intersects? r p))
 
-(defmulti collect-points class)
-
-(defmethod collect-points Rectangle [geom]
-  (:shape geom))
-
-(defmethod collect-points Point [geom]
-  (map vector (:shape geom)))
+(defmethod intersects? [Point RectangleNode]
+  [p rn] (intersects? (shape rn) p))
 
 (defn minimum-bounding-rectangle
   "Given a shape or collection of shapes, computes the minimum
@@ -83,63 +157,54 @@
        (map collect-points)
        (reduce #(map conj %1 %2))
        (map flatten)
-       (map #(vector (reduce min %) (reduce max %)))
-       (->Rectangle)))
+       (map #(vector (reduce min %) (reduce max %)))))
 
 (defn shape->rectangle
   "Coerces a shape to a rectangle given its minimum boundary."
   [shape]
-  (if (instance? Rectangle shape)
+  (if (or (instance? RectangleNode shape) (instance? Rectangle shape))
     shape
-    (minimum-bounding-rectangle shape)))
+    (->Rectangle (minimum-bounding-rectangle shape))))
 
 (defn area-enlargement-diff
   "Difference in area of rectangle node before and after
    enlargement with a shape"
   [node shape]
-  (- (area (minimum-bounding-rectangle shape node))
+  (- (area (->Rectangle (minimum-bounding-rectangle shape node)))
      (area node)))
 
-(defn best-shape-for-insert
-  [shapes shape-to-insert]
-  (some->> shapes
-           (map #(dissoc % :children))
-           (map #(hash-map :node %
+(defn best-node-for-insertion
+  [nodes shape-to-insert]
+  (some->> nodes
+           (map #(hash-map :node-shape (shape %)
                            :diff (area-enlargement-diff % shape-to-insert)))
-           (apply (partial min-key :diff))
-           (:node)))
+           (fast-min-by :diff 0)
+           (:node-shape)))
 
-(defn compress-rectangle
+(defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
-  ([rectangle]
-   (if-let [children (:children rectangle)]
-     (merge rectangle (apply minimum-bounding-rectangle children))
-     rectangle))
-  ([rectangle shape]
-   (let [children (conj (:children rectangle) shape)]
-     (merge rectangle
-            (assoc (apply minimum-bounding-rectangle children) :children children))))
-  ([rectangle shape & shapes]
-   (reduce compress-rectangle (compress-rectangle rectangle shape) shapes)))
+  ([rn]
+   (let [children (children rn)]
+     (if-not (empty? children)
+       (RectangleNode. (leaf? rn) children (apply minimum-bounding-rectangle children))
+       rn)))
+  ([rn shape]
+   (let [children (conj (children rn) shape)]
+     (if-not (empty? children)
+       (RectangleNode. (leaf? rn) children (apply minimum-bounding-rectangle children))
+       rn)))
+  ([rn shape & shapes]
+   (reduce compress-node (compress-node rn shape) shapes)))
 
-(defrecord RTree [tree dimension max-children min-children])
-
-(defn rtree
-  ([]
-   (map->RTree
-     {:tree (map->Rectangle {:shape [], :leaf? true}), :max-children 50, :min-children 1, :dimension 2}))
-  ([params]
-   (merge (rtree) params)))
-
-;TODO: CLEAN UP THIS GOD AWFUL MESS
 (defn augment-shape
   "Augments a shape by creating a map of sides along a dimension.
     e.g. (->Rectangle [[0 10] [5 15]]) => {0 [0 5] 1, [10 15]}
          (->Point [10 30]) => {0 [10 30], 1 [30 30}
    For use in calculating highest-low-side, lowest-high-side, etc."
   [shape]
-  (assoc shape :augmented (zipmap (range (dim shape))
-                                  (collect-points (shape->rectangle shape)))))
+  {:shape shape
+   :augmented (zipmap (range (dim shape))
+                      (collect-points (shape->rectangle shape)))})
 
 (defn augmented-val
   "Retrieves the (first or second) position along a
@@ -157,76 +222,77 @@
             min-lb (min-or-max-side min-key first d)
             max-ub (min-or-max-side max-key second d)
             min-ub (min-or-max-side min-key second d)]
-        (if (= (:shape max-lb) (:shape min-ub))
-          (let [reduced-distinct-shapes (distinct-by :shape reduced-shapes)]
+        (if (= (shape (:shape max-lb)) (shape (:shape min-ub)))
+          (let [reduced-distinct-shapes (distinct-by #(shape (:shape %)) reduced-shapes)]
             {:dimension       d,
              :norm-separation ##Inf,
-             :seeds           [(compress-rectangle (dissoc (first reduced-distinct-shapes) :augmented))
-                               (compress-rectangle (dissoc (second reduced-distinct-shapes) :augmented))]})
+             :seeds           [(compress-node (:shape (first reduced-distinct-shapes)))
+                               (compress-node (:shape (second reduced-distinct-shapes)))]})
           {:dimension       d
            :norm-separation (/ (- ((augmented-val first d) max-lb)
                                   ((augmented-val second d) min-ub))
                                (- ((augmented-val second d) max-ub)
                                   ((augmented-val first d) min-lb)))
-           :seeds           [(compress-rectangle (dissoc min-ub :augmented))
-                             (compress-rectangle (dissoc max-lb :augmented))]})))))
-
-(defn linear-seeds
-  "1.) Along each dimension, finds entry whose rectangle has the highest low side and
-       the lowest high side, calculating the normalized separation for each dimension.
-   2.)  Chooses the pair with the greatest normalized separation"
-  [shapes]
-  (->> shapes
-       linear-seeds-across-dimensions
-       (apply (partial max-key :norm-separation))
-       (:seeds)))
-
-(defn shape->seed
-  [shape r-seed l-seed]
-  (let [r-enlarged (compress-rectangle r-seed shape)
-        l-enlarged (compress-rectangle l-seed shape)
-        r-seed? (<= (- (area r-enlarged) (area r-seed))
-                    (- (area l-enlarged) (area l-seed)))]
-    (if r-seed?
-      {:next-seed :r-seed, :enlarged-seed r-enlarged}
-      {:next-seed :l-seed, :enlarged-seed l-enlarged})))
+           :seeds           [(compress-node (:shape min-ub))
+                             (compress-node (:shape max-lb))]})))))
 
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
   [seed leaf?]
-  (-> seed
-      minimum-bounding-rectangle
-      (assoc :leaf? leaf? :children [seed])))
+  (->> seed
+       minimum-bounding-rectangle
+       (->RectangleNode leaf? [seed])))
 
-(defmulti linear-split class)
+(defn linear-seeds
+  [shapes leaf?]
+  (->> shapes
+       linear-seeds-across-dimensions
+       (apply (partial max-key :norm-separation))
+       (:seeds)
+       (map #(initialize-seed % leaf?))))
 
-(defmethod linear-split Rectangle [r]
-  "1.) Apply algorithm PickSeeds to choose two entries to be first
-       elements of the two new nodes.
-   2.) If all groups have been assigned stop. If one group has so few
-       entries that all the rest must be assigned to it for it to have
-       the minimum m, assign them and stop.
-   3.) Invoke PickNext to choose the next entry to assign. Add it to the
-       group whose covering rectangle will have to be enlarged the least
-       to accommodate it. Resolve ties by adding the entry to the group with
-       the smaller area, then to the one with fewer entries, then to either.
-       Repeat 2.)"
-  ; TODO: Incorporate minimum m
-  ; TODO: Resolve ties by entry count as well
-  (when-let [shapes (:children r)]
-    (let [seeds (linear-seeds shapes)]
-      (loop [r-seed (initialize-seed (first seeds) (true? (:leaf? r)))
-             l-seed (initialize-seed (second seeds) (true? (:leaf? r)))
-             [shape & rest-shapes] (remove #{(-> r-seed :children first)
-                                             (-> l-seed :children first)} shapes)]
-        (if-not (nil? shape)
-          (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
-            (if (= next-seed :r-seed)
-              (recur enlarged-seed
-                     l-seed
-                     rest-shapes)
-              (recur r-seed
-                     enlarged-seed
-                     rest-shapes)))
-          (compress-rectangle (->Rectangle [[0 0] [0 0]]) r-seed l-seed))))))
+(defn shape->seed
+  [shape r-seed l-seed]
+  (let [r-enlarged (compress-node r-seed shape)
+        l-enlarged (compress-node l-seed shape)
+        r-diff (- (area r-enlarged) (area r-seed))
+        l-diff (- (area l-enlarged) (area l-seed))
+        r-seed? (if (= r-diff l-diff)
+                  (<= (count-children r-enlarged)
+                      (count-children l-enlarged))
+                  (<= r-diff l-diff))]
+    (if r-seed?
+      {:next-seed :r-seed, :enlarged-seed r-enlarged}
+      {:next-seed :l-seed, :enlarged-seed l-enlarged})))
 
+(defn linear-split [rn min-children]
+  (when-let [shapes (children rn)]
+    (let [seeds (linear-seeds shapes (leaf? rn))]
+      (loop [r-seed (first seeds)
+             l-seed (second seeds)
+             [shape & rest-shapes] (remove #{(-> r-seed children first)
+                                             (-> l-seed children first)} shapes)]
+        (if-not shape
+          (cond
+            (and (pos? (count rest-shapes))
+                 (= (+ (count rest-shapes) (count-children r-seed))
+                    min-children))
+            (recur (apply (partial compress-node r-seed) rest-shapes)
+                   l-seed
+                   nil)
+            (and (pos? (count rest-shapes))
+                 (= (+ (count rest-shapes) (count-children l-seed))
+                    min-children))
+            (recur r-seed
+                   (apply (partial compress-node l-seed) rest-shapes)
+                   nil)
+            :else
+            (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
+              (if (= next-seed :rseed)
+                (recur enlarged-seed
+                       l-seed
+                       rest-shapes)
+                (recur r-seed
+                       enlarged-seed
+                       rest-shapes))))
+          (compress-node (->RectangleNode (leaf? rn) [] []) r-seed l-seed))))))
