@@ -164,7 +164,7 @@
   [p rn] (intersects? (shape rn) p))
 
 (defn minimum-bounding-rectangle
-  ([shape] (->Rectangle (collect-points shape)))
+  ([s] (->Rectangle (collect-points s)))
   ([s1 s2]
    (->Rectangle
      (map (juxt (partial apply min) (partial apply max))
@@ -197,8 +197,8 @@
      (if-not (empty? children)
        (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
        rn)))
-  ([rn shape & shapes]
-   (reduce compress-node (compress-node rn shape) shapes)))
+  ([rn geom & geoms]
+   (reduce compress-node (compress-node rn geom) geoms)))
 
 (defn linear-seeds-across-dimensions
   [leaf? shapes]
