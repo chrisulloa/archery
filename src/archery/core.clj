@@ -22,7 +22,8 @@
                                                  (double max-y)))]
     (dotimes [n 10]
       (println (format "Clojure RTree Iteration %s" n))
-      (time (apply insert (rtree {:max-children 4}) (map (partial ->Rectangle) sample))))
+      (time (apply insert (rtree {:max-children 4
+                                  :min-children 2}) (map (partial ->Rectangle) sample))))
     (dotimes [n 10]
       (println (format "Java RTree Iteration %s" n))
       (time (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))))

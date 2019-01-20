@@ -34,7 +34,7 @@
   (branch? [_] false)
   (children [_] nil))
 
-(deftype RectangleNode [^Boolean leaf? ^IPersistentCollection children ^PersistentVector shape]
+(deftype RectangleNode [leaf? children shape]
   Geometry
   (dim [_] (count shape))
   (area [_] (apply * (map #(- (second %) (first %)) shape)))
@@ -44,7 +44,7 @@
   (branch? [_] true)
   (children [_] children)
   (children-nodes [_] (when-not leaf? children))
-  (make-node [node new-children] (RectangleNode. leaf? new-children shape)))
+  (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
 
 (defrecord RTree [root dimension max-children min-children])
 
@@ -242,12 +242,20 @@
            :seeds           [(compress-node (:shape min-ub))
                              (compress-node (:shape max-lb))]})))))
 
+(defn initialize-seed
+  "Creates a bounding box around a seed shape and includes it in vals."
+  [seed leaf?]
+  (->> seed
+       minimum-bounding-rectangle
+       (->RectangleNode leaf? [seed])))
+
 (defn linear-seeds
-  [shapes]
+  [shapes leaf?]
   (->> shapes
        linear-seeds-across-dimensions
        (apply (partial max-key :norm-separation))
-       (:seeds)))
+       (:seeds)
+       (map #(initialize-seed % leaf?))))
 
 (defn shape->seed
   [shape r-seed l-seed]
@@ -259,31 +267,35 @@
       {:next-seed :r-seed, :enlarged-seed r-enlarged}
       {:next-seed :l-seed, :enlarged-seed l-enlarged})))
 
-(defn initialize-seed
-  "Creates a bounding box around a seed shape and includes it in vals."
-  [seed leaf?]
-  (->> seed
-       minimum-bounding-rectangle
-       (->RectangleNode leaf? [seed])))
-
-(defmulti linear-split class)
-
-(defmethod linear-split RectangleNode [rn]
-  ; TODO: Incorporate minimum m
+(defn linear-split [rn min-children]
   ; TODO: Resolve ties by entry count as well
   (when-let [shapes (children rn)]
-    (let [seeds (linear-seeds shapes)]
-      (loop [r-seed (initialize-seed (first seeds) (leaf? rn))
-             l-seed (initialize-seed (second seeds) (leaf? rn))
+    (let [seeds (linear-seeds shapes (leaf? rn))]
+      (loop [r-seed (first seeds)
+             l-seed (second seeds)
              [shape & rest-shapes] (remove #{(-> r-seed children first)
                                              (-> l-seed children first)} shapes)]
-        (if-not (nil? shape)
-          (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
-            (if (= next-seed :r-seed)
-              (recur enlarged-seed
-                     l-seed
-                     rest-shapes)
-              (recur r-seed
-                     enlarged-seed
-                     rest-shapes)))
+        (if-not shape
+          (cond
+            (and (pos? (count rest-shapes))
+                 (= (+ (count rest-shapes) (count (children r-seed)))
+                    min-children))
+            (recur (apply (partial compress-node r-seed) rest-shapes)
+                   l-seed
+                   nil)
+            (and (pos? (count rest-shapes))
+                 (= (+ (count rest-shapes) (count (children l-seed)))
+                    min-children))
+            (recur r-seed
+                   (apply (partial compress-node l-seed) rest-shapes)
+                   nil)
+            :else
+            (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
+              (if (= next-seed :rseed)
+                (recur enlarged-seed
+                       l-seed
+                       rest-shapes)
+                (recur r-seed
+                       enlarged-seed
+                       rest-shapes))))
           (compress-node (->RectangleNode (leaf? rn) [] []) r-seed l-seed))))))
