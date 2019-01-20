@@ -59,7 +59,7 @@
   [min-children max-children]
   (fn [node state]
     (when (:inserted? state)
-      {:node (if (< max-children (count (children node)))
+      {:node (if (< max-children (count-children node))
                (linear-split (compress-node node) min-children)
                (compress-node node))})))
 
@@ -67,13 +67,13 @@
   [shape-to-insert min-children max-children]
   (fn [node state]
     (when-not (:inserted? state)
-      (if (or (nil? (:next-node state))
+      (if (or (not (:next-node state))
               (= (shape node) (:next-node state)))
         (if (leaf? node)
-          {:node  (if (<= max-children (count (children node)))
+          {:node  (if (<= max-children (count-children node))
                     (linear-split (compress-node node shape-to-insert)
                                   min-children)
-                    (compress-node node shape-to-insert))
+                    (compress-node node shape-to-insert)),
            :state {:inserted? true},
            :next  true}
           {:state {:next-node (best-node-for-insertion (children node)

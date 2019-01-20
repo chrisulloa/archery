@@ -6,6 +6,7 @@
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
   (branch? [node] "Can this node have children?")
+  (count-children [node] "Count children.")
   (children [node] "Children of node.")
   (children-nodes [node] "Children nodes of the node.")
   (make-node [node children] "Makes new node from existing node and new children."))
@@ -42,6 +43,7 @@
   TreeNode
   (leaf? [_] leaf?)
   (branch? [_] true)
+  (count-children [_] (count children))
   (children [_] children)
   (children-nodes [_] (when-not leaf? children))
   (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
@@ -263,8 +265,8 @@
         r-diff (- (area r-enlarged) (area r-seed))
         l-diff (- (area l-enlarged) (area l-seed))
         r-seed? (if (= r-diff l-diff)
-                  (<= (count (children r-enlarged))
-                      (count (children l-enlarged)))
+                  (<= (count-children r-enlarged)
+                      (count-children l-enlarged))
                   (<= r-diff l-diff))]
     (if r-seed?
       {:next-seed :r-seed, :enlarged-seed r-enlarged}
@@ -280,13 +282,13 @@
         (if-not shape
           (cond
             (and (pos? (count rest-shapes))
-                 (= (+ (count rest-shapes) (count (children r-seed)))
+                 (= (+ (count rest-shapes) (count-children r-seed))
                     min-children))
             (recur (apply (partial compress-node r-seed) rest-shapes)
                    l-seed
                    nil)
             (and (pos? (count rest-shapes))
-                 (= (+ (count rest-shapes) (count (children l-seed)))
+                 (= (+ (count rest-shapes) (count-children l-seed))
                     min-children))
             (recur r-seed
                    (apply (partial compress-node l-seed) rest-shapes)

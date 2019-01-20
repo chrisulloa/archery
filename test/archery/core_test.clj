@@ -112,8 +112,8 @@
             :seeds           [(->Point [0 0]) (map->Rectangle {:shape [[15 30] [35 55]]})]
             :norm-separation (/ 35 55)}
            (second seeds)))
-    (is (= [(->Point [0 0]) (map->Rectangle {:shape [[15 30] [35 55]]})]
-           (linear-seeds shapes)))))
+    (is (= (set [[[15 30] [35 55]] [[0 0] [0 0]]])
+           (set (map shape (linear-seeds shapes true)))))))
 
 (deftest test-initialize-seed
   (let [point-seed (->Point [15 30])
