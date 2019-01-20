@@ -238,16 +238,16 @@
            shapes (remove #{(-> r-seed children first)
                             (-> l-seed children first)} (children rn))]
       (if-not (empty? shapes)
-        ;(cond
-        ;  (= min-children (+ (count-children r-seed) (count shapes)))
-        ;  (recur (apply compress-node r-seed shapes)
-        ;         l-seed
-        ;         nil)
-        ;  (= min-children (+ (count-children l-seed) (count shapes)))
-        ;  (recur r-seed
-        ;         (apply compress-node l-seed shapes)
-        ;         nil)
-        ;  :else)
+        (cond
+          (= min-children (+ (count-children r-seed) (count shapes)))
+          (recur (apply compress-node r-seed shapes)
+                 l-seed
+                 nil)
+          (= min-children (+ (count-children l-seed) (count shapes)))
+          (recur r-seed
+                 (apply compress-node l-seed shapes)
+                 nil)
+          :else)
         (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
           (recur (first next-seeds) (second next-seeds) (rest shapes)))
         (compress-node (->RectangleNode false [] []) r-seed l-seed)))))
