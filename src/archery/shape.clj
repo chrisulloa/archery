@@ -1,6 +1,7 @@
 (ns archery.shape
   (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by fast-max-by]]
-            [clojure.core.protocols :refer [Datafiable datafy]]))
+            [clojure.core.protocols :refer [Datafiable datafy]])
+  (:import (clojure.lang IPersistentCollection)))
 
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
@@ -22,7 +23,7 @@
   Geometry
   (dim [_] (count shape))
   (area [_]
-    (apply * (map #(apply - %) shape)))
+    (abs (apply * (map #(apply - %) shape))))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -41,7 +42,7 @@
   (branch? [_] false)
   (children [_] nil))
 
-(deftype RectangleNode [leaf? children shape]
+(deftype RectangleNode [^boolean leaf? ^IPersistentCollection children ^IPersistentCollection shape]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
@@ -49,7 +50,7 @@
                :children (mapv datafy children)})
   Geometry
   (dim [_] (count shape))
-  (area [_] (apply * (map #(apply - %) shape)))
+  (area [_] (abs (apply * (map #(apply - %) shape))))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -60,7 +61,7 @@
   (children-nodes [_] (when-not leaf? children))
   (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
 
-(defrecord RTree [root dimension max-children min-children]
+(defrecord RTree [^RectangleNode root dimension max-children min-children]
   Datafiable
   (datafy [_] {:type :RTree
                :root (datafy root),
@@ -167,7 +168,7 @@
   ([s] (->Rectangle (collect-points s)))
   ([s1 s2]
    (->Rectangle
-     (map (juxt (partial apply min) (partial apply max))
+     (map (juxt #(apply min %) #(apply max %))
           (map concat (collect-points s1) (collect-points s2)))))
   ([s1 s2 & shapes]
     (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
@@ -183,7 +184,7 @@
   [nodes shape-to-insert]
   (->> nodes
        (fast-min-by #(area-enlargement-diff % shape-to-insert) 0)
-       (:node-shape)))
+       (shape)))
 
 (defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
@@ -201,28 +202,27 @@
    (reduce compress-node (compress-node rn geom) geoms)))
 
 (defn linear-seeds-across-dimensions
-  [leaf? shapes]
+  [shapes]
   (for [d (range (dim (first shapes)))]
     (let [max-lb (apply max-key (comp first #(nth % d) collect-points) shapes)
           min-ub (apply min-key (comp second #(nth % d) collect-points) shapes)]
       (if (= (shape max-lb) (shape min-ub))
-        (let [[first-shape second-shape & _] (distinct-by shape shapes)]
+        (let [distinct-shapes (distinct-by shape shapes)]
           {:norm-separation ##Inf,
-           :seeds           [(RectangleNode. leaf? [first-shape] (shape first-shape))
-                             (RectangleNode. leaf? [second-shape] (shape second-shape))]})
+           :seeds           [(first distinct-shapes) (second distinct-shapes)]})
         {:norm-separation (/ (- (-> max-lb collect-points (nth d) first)
                                 (-> min-ub collect-points (nth d) second))
                              (- (apply max (map (comp second #(nth % d) collect-points) shapes))
                                 (apply min (map (comp first #(nth % d) collect-points) shapes))))
-         :seeds           [(RectangleNode. leaf? [min-ub] (shape min-ub))
-                           (RectangleNode. leaf? [max-lb] (shape max-lb))]}))))
+         :seeds           [min-ub max-lb]}))))
 
 (defn linear-seeds
   [shapes leaf?]
   (->> shapes
-       (linear-seeds-across-dimensions leaf?)
+       (linear-seeds-across-dimensions)
        (fast-max-by :norm-separation ##Inf)
-       (:seeds)))
+       (:seeds)
+       (map #(RectangleNode. leaf? [%] (shape %)))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
