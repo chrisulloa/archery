@@ -85,32 +85,9 @@
                 (->Point [10 10])
                 (map->Rectangle {:shape [[0 3] [6 8]]})
                 (map->Rectangle {:shape [[15 30] [35 55]]})]
-        seeds (linear-seeds-across-dimensions shapes)]
-    (is (= {:dimension       0
-            :seeds           [(->Point [0 0]) (map->Rectangle {:shape [[15 30] [35 55]]})]
-            :norm-separation (/ 15 30)}
-          (first seeds)))
-    (is (= {:dimension       1
-            :seeds           [(->Point [0 0]) (map->Rectangle {:shape [[15 30] [35 55]]})]
-            :norm-separation (/ 35 55)}
-           (second seeds)))
+        seeds (linear-seeds-across-dimensions true shapes)]
+    (is (= (/ 15 30) (:norm-separation (first seeds))))
+    (is (= (/ 35 55) (:norm-separation (second seeds))))
     (is (= (set [[[15 30] [35 55]] [[0 0] [0 0]]])
            (set (map shape (linear-seeds shapes true)))))))
 
-(deftest test-initialize-seed
-  (let [point-seed (->Point [15 30])
-        rectangle-seed (->Rectangle [[15 30] [35 45]])]
-    (is (= (shape (->RectangleNode true [point-seed] [[15 15] [30 30]]))
-           (shape (initialize-seed point-seed true))))
-    (is (= (shape
-             (->RectangleNode true [rectangle-seed] [[15 30] [35 45]]))
-           (shape (initialize-seed rectangle-seed true))))))
-
-(deftest test-shape->seed
-  (let [l-seed (->RectangleNode true [(->Point [15 30])] [[15 15] [30 30]])
-        r-seed (->RectangleNode true [(->Rectangle [[35 55] [80 85]])] [[35 55] [80 85]])
-        p (->Point [18 18])
-        result (shape->seed p r-seed l-seed)]
-    (is (= [[15 18] [18 30]]
-           (shape (:enlarged-seed result))))
-    (is (= :l-seed (:next-seed result)))))

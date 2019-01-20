@@ -204,11 +204,11 @@
   [leaf? shapes]
   (for [d (range (dim (first shapes)))]
     (let [max-lb (apply max-key (comp first #(nth % d) collect-points) shapes)
-          min-ub (apply max-key (comp second #(nth % d) collect-points) shapes)]
+          min-ub (apply min-key (comp second #(nth % d) collect-points) shapes)]
       (if (= (shape max-lb) (shape min-ub))
         (let [[first-shape second-shape & _] (distinct-by shape shapes)]
           {:norm-separation ##Inf,
-           :seeds           [(RectangleNode. leaf? [first-shape] (minimum-bounding-rectangle second-shape))
+           :seeds           [(RectangleNode. leaf? [first-shape] (minimum-bounding-rectangle first-shape))
                              (RectangleNode. leaf? [second-shape] (minimum-bounding-rectangle second-shape))]})
         {:norm-separation (/ (- (-> max-lb collect-points (nth d) first)
                                 (-> min-ub collect-points (nth d) second))
@@ -216,13 +216,6 @@
                                 (apply min (map (comp first #(nth % d) collect-points) shapes))))
          :seeds           [(RectangleNode. leaf? [min-ub] (minimum-bounding-rectangle min-ub))
                            (RectangleNode. leaf? [max-lb] (minimum-bounding-rectangle max-lb))]}))))
-
-(defn initialize-seed
-  "Creates a bounding box around a seed shape and includes it in vals."
-  [seed leaf?]
-  (->> seed
-       minimum-bounding-rectangle
-       (RectangleNode. leaf? [seed])))
 
 (defn linear-seeds
   [shapes leaf?]
@@ -242,19 +235,19 @@
   (let [seeds (linear-seeds (children rn) (leaf? rn))]
     (loop [r-seed (first seeds)
            l-seed (second seeds)
-           [shape & rest-shapes :as shapes] (remove #{(-> r-seed children first)
-                                                      (-> l-seed children first)} (children rn))]
-      (if shape
-        (cond
-          (= min-children (+ (count-children r-seed) (count shapes)))
-          (recur (apply compress-node r-seed shapes)
-                 l-seed
-                 nil)
-          (= min-children (+ (count-children l-seed) (count shapes)))
-          (recur r-seed
-                 (apply compress-node l-seed shapes)
-                 nil)
-          :else
-          (let [next-seeds (shape->seeds shape r-seed l-seed)]
-            (recur (first next-seeds) (second next-seeds) rest-shapes)))
+           shapes (remove #{(-> r-seed children first)
+                            (-> l-seed children first)} (children rn))]
+      (if-not (empty? shapes)
+        ;(cond
+        ;  (= min-children (+ (count-children r-seed) (count shapes)))
+        ;  (recur (apply compress-node r-seed shapes)
+        ;         l-seed
+        ;         nil)
+        ;  (= min-children (+ (count-children l-seed) (count shapes)))
+        ;  (recur r-seed
+        ;         (apply compress-node l-seed shapes)
+        ;         nil)
+        ;  :else)
+        (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
+          (recur (first next-seeds) (second next-seeds) (rest shapes)))
         (compress-node (->RectangleNode false [] []) r-seed l-seed)))))
