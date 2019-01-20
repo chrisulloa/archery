@@ -187,7 +187,10 @@
 (defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
   ([rn]
-   (compress-node rn nil))
+   (let [children (children rn)]
+     (if-not (empty? children)
+       (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
+       rn)))
   ([rn geom]
    (let [children (conj (children rn) geom)]
      (if-not (empty? children)
