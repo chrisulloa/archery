@@ -66,24 +66,6 @@
     (is (= [[0] [3]] (collect-points (->Point [0 3]))))
     (is (= [[0 10] [5 15]] (collect-points (->Rectangle [[0 10] [5 15]]))))))
 
-(deftest test-shape->rectangle
-  (testing "shape->rectangle"
-    (is (= (->Rectangle [[5 10] [5 10]])
-           (shape->rectangle (->Rectangle [[5 10] [5 10]]))))
-    (is (= (->Rectangle [[5 5] [10 10]])
-           (shape->rectangle (->Point [5 10]))))))
-
-(deftest test-augment-shape
-  (testing "augment-shape"
-    (is (= {0 [10 10], 1 [15 15]}
-           (:augmented (augment-shape (->Point [10 15])))))
-    (is (= {0 [10 15], 1 [35 40]}
-           (:augmented (augment-shape (->Rectangle [[10 15] [35 40]])))))))
-
-(deftest test-augmented-val
-  (is (= 10 ((augmented-val second 2)
-              (augment-shape (->Rectangle [[10 15] [3 5] [0 10]]))))))
-
 (deftest test-area-enlargement-diff
   (is (= 25 (area-enlargement-diff (->RectangleNode true [] [[0 5] [0 5]]) (->Point [5 10])))))
 

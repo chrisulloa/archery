@@ -1,5 +1,5 @@
 (ns archery.shape
-  (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by]]
+  (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by fast-max-by]]
             [clojure.pprint :refer [pprint]]
             [clojure.core.protocols :refer [Datafiable datafy]]))
 
@@ -37,7 +37,7 @@
   (dim [_] (count shape))
   (area [_] 0)
   (shape [_] shape)
-  (collect-points [_] (map vector shape))
+  (collect-points [_] (map (partial repeat 2) shape))
   TreeNode
   (branch? [_] false)
   (children [_] nil))
@@ -172,13 +172,6 @@
        (apply map concat)
        (map (juxt (partial apply min) (partial apply max)))))
 
-(defn shape->rectangle
-  "Coerces a shape to a rectangle given its minimum boundary."
-  [shape]
-  (if (or (instance? RectangleNode shape) (instance? Rectangle shape))
-    shape
-    (->Rectangle (minimum-bounding-rectangle shape))))
-
 (defn area-enlargement-diff
   "Difference in area of rectangle node before and after
    enlargement with a shape"
@@ -207,45 +200,22 @@
   ([rn shape & shapes]
    (reduce compress-node (compress-node rn shape) shapes)))
 
-(defn augment-shape
-  "Augments a shape by creating a map of sides along a dimension.
-    e.g. (->Rectangle [[0 10] [5 15]]) => {0 [0 5] 1, [10 15]}
-         (->Point [10 30]) => {0 [10 30], 1 [30 30}
-   For use in calculating highest-low-side, lowest-high-side, etc."
-  [shape]
-  {:shape shape
-   :augmented (zipmap (range (dim shape))
-                      (collect-points (shape->rectangle shape)))})
-
-(defn augmented-val
-  "Retrieves the (first or second) position along a
-   dimension of an augmented shape."
-  [position dimension]
-  (fn [shape] (-> shape :augmented (get dimension) position)))
-
 (defn linear-seeds-across-dimensions
-  [shapes]
-  (let [dimensions (dim (first shapes))
-        reduced-shapes (map augment-shape shapes)
-        min-or-max-side #(apply (partial %1 (augmented-val %2 %3)) reduced-shapes)]
-    (for [d (range dimensions)]
-      (let [max-lb (min-or-max-side max-key first d)
-            min-lb (min-or-max-side min-key first d)
-            max-ub (min-or-max-side max-key second d)
-            min-ub (min-or-max-side min-key second d)]
-        (if (= (shape (:shape max-lb)) (shape (:shape min-ub)))
-          (let [reduced-distinct-shapes (distinct-by #(shape (:shape %)) reduced-shapes)]
-            {:dimension       d,
-             :norm-separation ##Inf,
-             :seeds           [(compress-node (:shape (first reduced-distinct-shapes)))
-                               (compress-node (:shape (second reduced-distinct-shapes)))]})
-          {:dimension       d
-           :norm-separation (/ (- ((augmented-val first d) max-lb)
-                                  ((augmented-val second d) min-ub))
-                               (- ((augmented-val second d) max-ub)
-                                  ((augmented-val first d) min-lb)))
-           :seeds           [(compress-node (:shape min-ub))
-                             (compress-node (:shape max-lb))]})))))
+  [leaf? shapes]
+  (for [d (range (dim (first shapes)))]
+    (let [max-lb (apply max-key (comp first #(nth % d) collect-points) shapes)
+          min-ub (apply max-key (comp second #(nth % d) collect-points) shapes)]
+      (if (= (shape max-lb) (shape min-ub))
+        (let [[first-shape second-shape & _] (distinct-by shape shapes)]
+          {:norm-separation ##Inf,
+           :seeds           [(RectangleNode. leaf? [first-shape] (minimum-bounding-rectangle second-shape))
+                             (RectangleNode. leaf? [second-shape] (minimum-bounding-rectangle second-shape))]})
+        {:norm-separation (/ (- (-> max-lb collect-points (nth d) first)
+                                (-> min-ub collect-points (nth d) second))
+                             (- (apply max (map (comp second #(nth % d) collect-points) shapes))
+                                (apply min (map (comp first #(nth % d) collect-points) shapes))))
+         :seeds           [(RectangleNode. leaf? [min-ub] (minimum-bounding-rectangle min-ub))
+                           (RectangleNode. leaf? [max-lb] (minimum-bounding-rectangle max-lb))]}))))
 
 (defn initialize-seed
   "Creates a bounding box around a seed shape and includes it in vals."
@@ -257,10 +227,9 @@
 (defn linear-seeds
   [shapes leaf?]
   (->> shapes
-       linear-seeds-across-dimensions
-       (apply (partial max-key :norm-separation))
-       (:seeds)
-       (map #(initialize-seed % leaf?))))
+       (linear-seeds-across-dimensions leaf?)
+       (fast-max-by :norm-separation ##Inf)
+       (:seeds)))
 
 (defn shape->seeds
   [shape r-seed l-seed]
