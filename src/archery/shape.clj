@@ -1,7 +1,7 @@
 (ns archery.shape
-  (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by]])
-  (:import (clojure.lang PersistentVector IPersistentCollection)))
-
+  (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by]]
+            [clojure.pprint :refer [pprint]]
+            [clojure.core.protocols :refer [Datafiable datafy]]))
 
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
@@ -18,6 +18,8 @@
   (collect-points [geom] "Points of a given geometry."))
 
 (defrecord Rectangle [shape]
+  Datafiable
+  (datafy [_] {:type :Rectangle, :shape shape})
   Geometry
   (dim [_] (count shape))
   (area [_]
@@ -29,6 +31,8 @@
   (children [_] nil))
 
 (defrecord Point [shape]
+  Datafiable
+  (datafy [_] {:type :Point, :shape shape})
   Geometry
   (dim [_] (count shape))
   (area [_] 0)
@@ -39,6 +43,11 @@
   (children [_] nil))
 
 (deftype RectangleNode [leaf? children shape]
+  Datafiable
+  (datafy [_] {:type :RectangleNode,
+               :leaf? leaf?,
+               :shape shape,
+               :children (mapv datafy children)})
   Geometry
   (dim [_] (count shape))
   (area [_] (apply * (map #(- (second %) (first %)) shape)))
@@ -52,7 +61,12 @@
   (children-nodes [_] (when-not leaf? children))
   (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
 
-(defrecord RTree [root dimension max-children min-children])
+(defrecord RTree [root dimension max-children min-children]
+  Datafiable
+  (datafy [_] {:root (datafy root)
+               :dimension dimension
+               :max-children max-children
+               :min-children min-children}))
 
 (defn rtree
   ([]
@@ -241,7 +255,7 @@
   [seed leaf?]
   (->> seed
        minimum-bounding-rectangle
-       (->RectangleNode leaf? [seed])))
+       (RectangleNode. leaf? [seed])))
 
 (defn linear-seeds
   [shapes leaf?]
@@ -251,19 +265,12 @@
        (:seeds)
        (map #(initialize-seed % leaf?))))
 
-(defn shape->seed
+(defn shape->seeds
   [shape r-seed l-seed]
-  (let [r-enlarged (compress-node r-seed shape)
-        l-enlarged (compress-node l-seed shape)
-        r-diff (- (area r-enlarged) (area r-seed))
-        l-diff (- (area l-enlarged) (area l-seed))
-        r-seed? (if (= r-diff l-diff)
-                  (<= (count-children r-enlarged)
-                      (count-children l-enlarged))
-                  (<= r-diff l-diff))]
-    (if r-seed?
-      {:next-seed :r-seed, :enlarged-seed r-enlarged}
-      {:next-seed :l-seed, :enlarged-seed l-enlarged})))
+  (if (<= (area-enlargement-diff r-seed shape)
+          (area-enlargement-diff l-seed shape))
+    [(compress-node r-seed shape) l-seed]
+    [r-seed (compress-node l-seed shape)]))
 
 (defn linear-split [rn min-children]
   (when-let [shapes (children rn)]
@@ -272,27 +279,7 @@
              l-seed (second seeds)
              [shape & rest-shapes] (remove #{(-> r-seed children first)
                                              (-> l-seed children first)} shapes)]
-        (if-not shape
-          (cond
-            (and (pos? (count rest-shapes))
-                 (= (+ (count rest-shapes) (count-children r-seed))
-                    min-children))
-            (recur (apply (partial compress-node r-seed) rest-shapes)
-                   l-seed
-                   nil)
-            (and (pos? (count rest-shapes))
-                 (= (+ (count rest-shapes) (count-children l-seed))
-                    min-children))
-            (recur r-seed
-                   (apply (partial compress-node l-seed) rest-shapes)
-                   nil)
-            :else
-            (let [{:keys [next-seed enlarged-seed]} (shape->seed shape r-seed l-seed)]
-              (if (= next-seed :rseed)
-                (recur enlarged-seed
-                       l-seed
-                       rest-shapes)
-                (recur r-seed
-                       enlarged-seed
-                       rest-shapes))))
-          (compress-node (->RectangleNode (leaf? rn) [] []) r-seed l-seed))))))
+        (if shape
+          (let [next-seeds (shape->seeds shape r-seed l-seed)]
+            (recur (first next-seeds) (second next-seeds) rest-shapes))
+          (compress-node (->RectangleNode false [] []) r-seed l-seed))))))
