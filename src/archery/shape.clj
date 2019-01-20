@@ -1,6 +1,5 @@
 (ns archery.shape
   (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by fast-max-by]]
-            [clojure.pprint :refer [pprint]]
             [clojure.core.protocols :refer [Datafiable datafy]]))
 
 (defprotocol TreeNode

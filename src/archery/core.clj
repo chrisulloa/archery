@@ -10,7 +10,7 @@
   (:gen-class))
 
 (defn -main []
-  (println "Starting benchmark: Inserting 10,000 rectangles.")
+  (println "Starting benchmark: Inserting 1,000 rectangles.")
   (let [random-shapes (fn [] (let [min-x (rand-int 500000)
                                    max-x (+ min-x (rand-int 100000))
                                    min-y (rand-int 500000)

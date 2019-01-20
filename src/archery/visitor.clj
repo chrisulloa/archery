@@ -1,8 +1,7 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
             [archery.shape :refer :all]
-            [archery.util :refer [fast-contains?]])
-  (:import (archery.shape RectangleNode)))
+            [archery.util :refer [fast-contains?]]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
