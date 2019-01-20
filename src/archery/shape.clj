@@ -164,19 +164,19 @@
   [p rn] (intersects? (shape rn) p))
 
 (defn minimum-bounding-rectangle
-  "Given a shape or collection of shapes, computes the minimum
-   bounding rectangle. collect-points must be defined for a shape."
-  [& shapes]
-  (->> shapes
-       (map collect-points)
-       (apply map concat)
-       (map (juxt (partial apply min) (partial apply max)))))
+  ([shape] (->Rectangle (collect-points shape)))
+  ([s1 s2]
+   (->Rectangle
+     (map (juxt (partial apply min) (partial apply max))
+          (map concat (collect-points s1) (collect-points s2)))))
+  ([s1 s2 & shapes]
+    (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
 
 (defn area-enlargement-diff
   "Difference in area of rectangle node before and after
    enlargement with a shape"
   [node shape]
-  (- (area (->Rectangle (minimum-bounding-rectangle shape node)))
+  (- (area (minimum-bounding-rectangle shape node))
      (area node)))
 
 (defn best-node-for-insertion
@@ -190,12 +190,12 @@
   ([rn]
    (let [children (children rn)]
      (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (apply minimum-bounding-rectangle children))
+       (RectangleNode. (leaf? rn) children (collect-points (apply minimum-bounding-rectangle children)))
        rn)))
   ([rn shape]
    (let [children (conj (children rn) shape)]
      (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (apply minimum-bounding-rectangle children))
+       (RectangleNode. (leaf? rn) children (collect-points (apply minimum-bounding-rectangle children)))
        rn)))
   ([rn shape & shapes]
    (reduce compress-node (compress-node rn shape) shapes)))
@@ -208,14 +208,14 @@
       (if (= (shape max-lb) (shape min-ub))
         (let [[first-shape second-shape & _] (distinct-by shape shapes)]
           {:norm-separation ##Inf,
-           :seeds           [(RectangleNode. leaf? [first-shape] (minimum-bounding-rectangle first-shape))
-                             (RectangleNode. leaf? [second-shape] (minimum-bounding-rectangle second-shape))]})
+           :seeds           [(RectangleNode. leaf? [first-shape] (shape first-shape))
+                             (RectangleNode. leaf? [second-shape] (shape second-shape))]})
         {:norm-separation (/ (- (-> max-lb collect-points (nth d) first)
                                 (-> min-ub collect-points (nth d) second))
                              (- (apply max (map (comp second #(nth % d) collect-points) shapes))
                                 (apply min (map (comp first #(nth % d) collect-points) shapes))))
-         :seeds           [(RectangleNode. leaf? [min-ub] (minimum-bounding-rectangle min-ub))
-                           (RectangleNode. leaf? [max-lb] (minimum-bounding-rectangle max-lb))]}))))
+         :seeds           [(RectangleNode. leaf? [min-ub] (shape min-ub))
+                           (RectangleNode. leaf? [max-lb] (shape max-lb))]}))))
 
 (defn linear-seeds
   [shapes leaf?]
