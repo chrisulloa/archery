@@ -239,13 +239,22 @@
     [r-seed (compress-node l-seed shape)]))
 
 (defn linear-split [rn min-children]
-  (when-let [shapes (children rn)]
-    (let [seeds (linear-seeds shapes (leaf? rn))]
-      (loop [r-seed (first seeds)
-             l-seed (second seeds)
-             [shape & rest-shapes] (remove #{(-> r-seed children first)
-                                             (-> l-seed children first)} shapes)]
-        (if shape
+  (let [seeds (linear-seeds (children rn) (leaf? rn))]
+    (loop [r-seed (first seeds)
+           l-seed (second seeds)
+           [shape & rest-shapes :as shapes] (remove #{(-> r-seed children first)
+                                                      (-> l-seed children first)} (children rn))]
+      (if shape
+        (cond
+          (= min-children (+ (count-children r-seed) (count shapes)))
+          (recur (apply compress-node r-seed shapes)
+                 l-seed
+                 nil)
+          (= min-children (+ (count-children l-seed) (count shapes)))
+          (recur r-seed
+                 (apply compress-node l-seed shapes)
+                 nil)
+          :else
           (let [next-seeds (shape->seeds shape r-seed l-seed)]
-            (recur (first next-seeds) (second next-seeds) rest-shapes))
-          (compress-node (->RectangleNode false [] []) r-seed l-seed))))))
+            (recur (first next-seeds) (second next-seeds) rest-shapes)))
+        (compress-node (->RectangleNode false [] []) r-seed l-seed)))))
