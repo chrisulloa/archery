@@ -62,9 +62,10 @@
 
 (defrecord RTree [root dimension max-children min-children]
   Datafiable
-  (datafy [_] {:root (datafy root)
-               :dimension dimension
-               :max-children max-children
+  (datafy [_] {:type :RTree
+               :root (datafy root),
+               :dimension dimension,
+               :max-children max-children,
                :min-children min-children}))
 
 (defn rtree
