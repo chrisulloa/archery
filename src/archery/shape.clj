@@ -182,9 +182,16 @@
 
 (defn best-node-for-insertion
   [nodes shape-to-insert]
-  (->> nodes
-       (fast-min-by #(area-enlargement-diff % shape-to-insert) 0)
-       (shape)))
+  (loop [[node & rest-nodes] nodes
+         best-node {:shape [], :area-diff ##Inf}]
+    (if node
+      (let [area-diff (area-enlargement-diff node shape-to-insert)]
+        (if (zero? area-diff)
+          (shape node)
+          (if (< area-diff (:area-diff best-node))
+            (recur rest-nodes {:shape (shape node), :area-diff area-diff})
+            (recur rest-nodes best-node))))
+      (:shape best-node))))
 
 (defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."

@@ -30,3 +30,5 @@
     (dotimes [n 10]
       (println (format "Java RTree Iteration %s" n))
       (time (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))))
+
+(-main)
