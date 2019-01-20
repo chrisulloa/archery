@@ -29,15 +29,15 @@
 
 (deftest test-minimum-bounding-rectangle
   (testing "Minimum bounding rectangle."
-    (is (= [[-10 55] [-15 60]]
+    (is (= (->Rectangle [[-10 55] [-15 60]])
            (minimum-bounding-rectangle (->Point [0 0])
                                        (->Point [55 60])
                                        (->Point [-10 -15]))))
-    (is (= [[-100 100] [-300 300]]
+    (is (= (->Rectangle [[-100 100] [-300 300]])
            (minimum-bounding-rectangle (->Point [-100 -300])
                                        (->Point [100 300])
                                        (->Rectangle [[55 60] [25 100]]))))
-    (is (= [[100 100] [150 150]]
+    (is (= (->Rectangle [[100 100] [150 150]])
            (minimum-bounding-rectangle (->Rectangle [[100 100] [150 150]]))))))
 
 (deftest test-intersects?
@@ -63,7 +63,7 @@
 
 (deftest test-collect-points
   (testing "Collect points function."
-    (is (= [[0] [3]] (collect-points (->Point [0 3]))))
+    (is (= (seq [(seq [0 0]) (seq [3 3])]) (collect-points (->Point [0 3]))))
     (is (= [[0 10] [5 15]] (collect-points (->Rectangle [[0 10] [5 15]]))))))
 
 (deftest test-area-enlargement-diff
@@ -88,6 +88,6 @@
         seeds (linear-seeds-across-dimensions true shapes)]
     (is (= (/ 15 30) (:norm-separation (first seeds))))
     (is (= (/ 35 55) (:norm-separation (second seeds))))
-    (is (= (set [[[15 30] [35 55]] [[0 0] [0 0]]])
+    (is (= (set [[[15 30] [35 55]] [0 0]])
            (set (map shape (linear-seeds shapes true)))))))
 
