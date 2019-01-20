@@ -23,7 +23,7 @@
   Geometry
   (dim [_] (count shape))
   (area [_]
-    (apply * (map #(- (second %) (first %)) shape)))
+    (apply * (map #(apply - %) shape)))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -50,7 +50,7 @@
                :children (mapv datafy children)})
   Geometry
   (dim [_] (count shape))
-  (area [_] (apply * (map #(- (second %) (first %)) shape)))
+  (area [_] (apply * (map #(apply - %) shape)))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -169,9 +169,8 @@
   [& shapes]
   (->> shapes
        (map collect-points)
-       (reduce #(map conj %1 %2))
-       (map flatten)
-       (map #(vector (reduce min %) (reduce max %)))))
+       (apply map concat)
+       (map (juxt (partial apply min) (partial apply max)))))
 
 (defn shape->rectangle
   "Coerces a shape to a rectangle given its minimum boundary."
@@ -189,11 +188,9 @@
 
 (defn best-node-for-insertion
   [nodes shape-to-insert]
-  (some->> nodes
-           (map #(hash-map :node-shape (shape %)
-                           :diff (area-enlargement-diff % shape-to-insert)))
-           (fast-min-by :diff 0)
-           (:node-shape)))
+  (->> nodes
+       (fast-min-by #(area-enlargement-diff % shape-to-insert) 0)
+       (:node-shape)))
 
 (defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
