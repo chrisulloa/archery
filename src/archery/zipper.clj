@@ -54,6 +54,6 @@
            next-loc (if (:inserted? new-state)
                       (zip/up new-loc)
                       (zip/next new-loc))]
-       (if (or (nil? next-loc) (zip/end? next-loc) (= stop true))
+       (if (or (nil? next-loc) (zip/end? next-loc) stop)
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))

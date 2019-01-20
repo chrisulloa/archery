@@ -56,40 +56,35 @@
       (zipper node) [(enveloped-shapes-visitor rectangle)])))
 
 (defn adjust-node-visitor
-  ([] (adjust-node-visitor nil nil))
-  ([min-children max-children]
-   (fn [node state]
-     (when (:inserted? state)
-       {:node (if (< (or max-children 50) (count (children node)))
-                (linear-split (compress-node node)
-                              (or min-children 2))
-                (compress-node node))}))))
+  [min-children max-children]
+  (fn [node state]
+    (when (:inserted? state)
+      {:node (if (< max-children (count (children node)))
+               (linear-split (compress-node node) min-children)
+               (compress-node node))})))
 
 (defn insert-visitor
-  ([shape]
-   (insert-visitor shape nil nil))
-  ([shape-to-insert max-children min-children]
-   (fn [node state]
-     (when-not (:inserted? state)
-       (if (or (nil? (:next-node state))
-               (= (shape node) (:next-node state)))
-         (if (leaf? node)
-           {:node  (if (<= (or max-children 50) (count (children node)))
-                     (linear-split (compress-node node shape-to-insert)
-                                   (or min-children 2))
-                     (compress-node node shape-to-insert))
-            :state {:inserted? true},
-            :next  true}
-           {:state {:next-node (best-node-for-insertion (children node)
-                                                        shape-to-insert)}})
-         {:next true})))))
+  [shape-to-insert min-children max-children]
+  (fn [node state]
+    (when-not (:inserted? state)
+      (if (or (nil? (:next-node state))
+              (= (shape node) (:next-node state)))
+        (if (leaf? node)
+          {:node  (if (<= max-children (count (children node)))
+                    (linear-split (compress-node node shape-to-insert)
+                                  min-children)
+                    (compress-node node shape-to-insert))
+           :state {:inserted? true},
+           :next  true}
+          {:state {:next-node (best-node-for-insertion (children node)
+                                                       shape-to-insert)}})
+        {:next true}))))
 
 (defn insert
   ([tree shape]
-   (let [max-children (:max-children tree)
-         min-children (:min-children tree)]
+   (let [{:keys [max-children min-children]} tree]
      (update tree :root #(:node (tree-inserter (zipper %)
-                                               [(insert-visitor shape max-children min-children)
-                                                (adjust-node-visitor max-children min-children)])))))
+                                               [(insert-visitor shape min-children max-children)
+                                                (adjust-node-visitor min-children max-children)])))))
   ([tree shape & shapes]
    (reduce insert (insert tree shape) shapes)))
