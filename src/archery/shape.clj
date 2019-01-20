@@ -201,7 +201,6 @@
   ([rn shape & shapes]
    (reduce compress-node (compress-node rn shape) shapes)))
 
-;TODO: CLEAN UP THIS GOD AWFUL MESS
 (defn augment-shape
   "Augments a shape by creating a map of sides along a dimension.
     e.g. (->Rectangle [[0 10] [5 15]]) => {0 [0 5] 1, [10 15]}
@@ -261,14 +260,17 @@
   [shape r-seed l-seed]
   (let [r-enlarged (compress-node r-seed shape)
         l-enlarged (compress-node l-seed shape)
-        r-seed? (<= (- (area r-enlarged) (area r-seed))
-                    (- (area l-enlarged) (area l-seed)))]
+        r-diff (- (area r-enlarged) (area r-seed))
+        l-diff (- (area l-enlarged) (area l-seed))
+        r-seed? (if (= r-diff l-diff)
+                  (<= (count (children r-enlarged))
+                      (count (children l-enlarged)))
+                  (<= r-diff l-diff))]
     (if r-seed?
       {:next-seed :r-seed, :enlarged-seed r-enlarged}
       {:next-seed :l-seed, :enlarged-seed l-enlarged})))
 
 (defn linear-split [rn min-children]
-  ; TODO: Resolve ties by entry count as well
   (when-let [shapes (children rn)]
     (let [seeds (linear-seeds shapes (leaf? rn))]
       (loop [r-seed (first seeds)
