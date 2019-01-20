@@ -13,7 +13,7 @@
 (defn node-contains-shape-visitor
   "Visitor that returns node which contains shape."
   [shape]
-  (fn [node state]
+  (fn [node _]
     (when (and (leaf? node)
                (envelops? node shape)
                (fast-contains? (children node) shape))
