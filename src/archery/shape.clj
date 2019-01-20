@@ -247,7 +247,7 @@
           (recur r-seed
                  (apply compress-node l-seed shapes)
                  nil)
-          :else)
-        (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
-          (recur (first next-seeds) (second next-seeds) (rest shapes)))
+          :else
+          (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
+            (recur (first next-seeds) (second next-seeds) (rest shapes))))
         (compress-node (->RectangleNode false [] []) r-seed l-seed)))))
