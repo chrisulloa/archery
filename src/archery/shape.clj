@@ -190,12 +190,12 @@
   ([rn]
    (let [children (children rn)]
      (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (collect-points (apply minimum-bounding-rectangle children)))
+       (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
        rn)))
-  ([rn shape]
-   (let [children (conj (children rn) shape)]
+  ([rn geom]
+   (let [children (conj (children rn) geom)]
      (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (collect-points (apply minimum-bounding-rectangle children)))
+       (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
        rn)))
   ([rn shape & shapes]
    (reduce compress-node (compress-node rn shape) shapes)))
