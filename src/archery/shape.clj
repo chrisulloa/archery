@@ -22,8 +22,7 @@
   (datafy [_] {:type :Rectangle, :shape shape})
   Geometry
   (dim [_] (count shape))
-  (area [_]
-    (abs (apply * (map #(apply - %) shape))))
+  (area [_] (transduce (map #(reduce - (reverse %))) * shape))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -50,7 +49,7 @@
                :children (mapv datafy children)})
   Geometry
   (dim [_] (count shape))
-  (area [_] (abs (apply * (map #(apply - %) shape))))
+  (area [_] (transduce (map #(reduce - (reverse %))) * shape))
   (shape [_] shape)
   (collect-points [_] shape)
   TreeNode
@@ -168,30 +167,10 @@
   ([s] (->Rectangle (collect-points s)))
   ([s1 s2]
    (->Rectangle
-     (map (juxt #(apply min %) #(apply max %))
-          (map concat (collect-points s1) (collect-points s2)))))
+     (into [] (map (juxt #(reduce min %) #(reduce max %)))
+           (map concat (collect-points s1) (collect-points s2)))))
   ([s1 s2 & shapes]
     (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
-
-(defn area-enlargement-diff
-  "Difference in area of rectangle node before and after
-   enlargement with a shape"
-  [node shape]
-  (- (area (minimum-bounding-rectangle shape node))
-     (area node)))
-
-(defn best-node-for-insertion
-  [nodes shape-to-insert]
-  (loop [[node & rest-nodes] nodes
-         best-node {:shape [], :area-diff ##Inf}]
-    (if node
-      (let [area-diff (area-enlargement-diff node shape-to-insert)]
-        (if (zero? area-diff)
-          (shape node)
-          (if (< area-diff (:area-diff best-node))
-            (recur rest-nodes {:shape (shape node), :area-diff area-diff})
-            (recur rest-nodes best-node))))
-      (:shape best-node))))
 
 (defn compress-node
   "Adjusts boundary for tight fit, after adding extra shapes if needed."
@@ -207,6 +186,26 @@
        rn)))
   ([rn geom & geoms]
    (reduce compress-node (compress-node rn geom) geoms)))
+
+(defn area-enlargement-diff
+  "Difference in area of rectangle node before and after
+   enlargement with a shape"
+  [^RectangleNode node shape]
+  (- (area (minimum-bounding-rectangle node shape))
+     (area node)))
+
+(defn best-node-for-insertion
+  [nodes shape-to-insert]
+  (loop [[node & rest-nodes] nodes
+         best-node {:shape [], :area-diff ##Inf}]
+    (if node
+      (let [area-diff (area-enlargement-diff node shape-to-insert)]
+        (if (zero? area-diff)
+          (shape node)
+          (if (< area-diff (:area-diff best-node))
+            (recur rest-nodes {:shape (shape node), :area-diff area-diff})
+            (recur rest-nodes best-node))))
+      (:shape best-node))))
 
 (defn linear-seeds-across-dimensions
   [shapes]

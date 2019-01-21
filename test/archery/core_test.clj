@@ -85,7 +85,7 @@
                 (->Point [10 10])
                 (map->Rectangle {:shape [[0 3] [6 8]]})
                 (map->Rectangle {:shape [[15 30] [35 55]]})]
-        seeds (linear-seeds-across-dimensions true shapes)]
+        seeds (linear-seeds-across-dimensions shapes)]
     (is (= (/ 15 30) (:norm-separation (first seeds))))
     (is (= (/ 35 55) (:norm-separation (second seeds))))
     (is (= (set [[[15 30] [35 55]] [0 0]])
