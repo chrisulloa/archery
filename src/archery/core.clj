@@ -14,10 +14,10 @@
                                    min-y (rand-int 500000)
                                    max-y (+ min-y (rand-int 100000))]
                                [[min-x max-x] [min-y max-y]]))
-        sample (take 1000 (repeatedly random-shapes))]
-    (pprint (datafy (reduce insert (rtree) (take 10 (map ->Rectangle sample)))))
+        sample (take 10000 (repeatedly random-shapes))]
+    (pprint (datafy (reduce insert (rtree) (take 20 (map ->Rectangle sample)))))
     (time
-      (dotimes [n 100]
+      (dotimes [n 10]
         (println (format "Clojure RTree Iteration %s" n))
         (time
           (reduce insert (rtree {:max-children 5, :min-children 2}) (map ->Rectangle sample)))))))

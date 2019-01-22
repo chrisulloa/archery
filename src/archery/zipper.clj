@@ -5,6 +5,18 @@
 (defn zipper [node]
   (zip/zipper branch? children-nodes make-node node))
 
+(defn replace-node
+  ([loc node]
+    (zip/replace loc node))
+  ([loc node1 node2]
+   (let [[_ {r :r :as path}] loc]
+     (if (nil? path)
+       (with-meta [(compress-node (->RectangleNode false [] []) node1 node2)
+                   (assoc path :changed? true)]
+                  (meta loc))
+       (with-meta [node1 (assoc path :r (cons node2 r) :changed? true)]
+                  (meta loc))))))
+
 (defn visit-node
   [start-node start-state visitors]
   (loop [node start-node
@@ -50,7 +62,7 @@
            stop (:stop context)
            new-loc (if (= new-node (zip/node loc))
                      loc
-                     (zip/replace loc new-node))
+                     (apply replace-node loc new-node))
            next-loc (if (:inserted? new-state)
                       (zip/up new-loc)
                       (zip/next new-loc))]
