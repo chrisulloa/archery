@@ -1,5 +1,5 @@
 (defproject archery "0.1.0-SNAPSHOT"
-  :description "rtree implementation in Clojure, using functional zippers."
+  :description "Clojure RTree implementation, using functional zippers."
   :url "https://github.com/chrisulloa/archery"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

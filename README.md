@@ -36,5 +36,4 @@ http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf
 
 ## License
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License version 1.0.
