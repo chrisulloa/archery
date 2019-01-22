@@ -2,30 +2,29 @@
 
 rtree implementation in Clojure, using functional zippers.
 
-## TODO
-Visualizations
-* Vega
-Algorithms
-* Searching
-  * RadiusSearch
-  * ShapeIntersects
-  * ShapeContains
-* Insertion
-  * ChooseLeaf
-  * AdjustTree
-  * NodeSplitting
-* Deletion
-  * FindLeaf
-  * CondenseTree
-* Updating
-* Splitting
-  * QuadraticSplit
-  * LinearSplit
-  * R\*TreeNodeSplit
-N-Dimensions
+## Features
+* Visualizations
+  * Vega JSON Output
+* Algorithms
+  * Searching
+    * RadiusSearch
+    * ShapeIntersects
+    * ShapeContains
+  * Insertion
+    * ChooseLeaf
+    * AdjustTree
+    * NodeSplitting
+  * Deletion
+    * FindLeaf
+    * CondenseTree
+  * Updating
+  * Splitting
+    * QuadraticSplit
+    * LinearSplit
+    * R\*TreeNodeSplit
+* N-Dimensions
   * Hilbert RTree
-Benchmarks
-* Benchmark against David Moten library
+* Benchmarks
 
 ## References
 
