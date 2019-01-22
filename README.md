@@ -1,6 +1,6 @@
 # archery
 
-rtree implementation in Clojure, using functional zippers.
+Clojure RTree implementation, using functional zippers. Very much a work in progress.
 
 ## Features
 * Visualizations
@@ -31,8 +31,6 @@ rtree implementation in Clojure, using functional zippers.
 https://www.ibm.com/developerworks/library/j-treevisit/
 
 https://github.com/davidmoten/rtree
-
-https://www.researchgate.net/publication/260599600_Corner-based_splitting_An_improved_node_splitting_algorithm_for_R-tree
 
 http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf
 
