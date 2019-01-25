@@ -35,6 +35,20 @@
          :next true})
       {:next true})))
 
+(defn collect-shapes-visitor
+  [node state]
+  (if-not (leaf? node)
+    {:state (update state :nodes #(conj % node))}
+    (let [children (children node)]
+      {:state {:nodes (:nodes state)
+               :rectangles (concat (:rectangles state) (filter #(= (class %) archery.shape.Rectangle) children))
+               :points     (concat (:points state) (filter #(= (class %) archery.shape.Point) children))}})))
+
+(defn shapes-collector
+  "Collects all points"
+  [node]
+  (:state (tree-visitor (zipper node) {:nodes []} [collect-shapes-visitor])))
+
 (defn leaf-collector
   "Collect all leaf nodes."
   [node]

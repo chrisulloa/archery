@@ -4,10 +4,55 @@
             [archery.visitor :refer :all]
             [archery.util :refer :all]
             [clojure.core.protocols :refer [datafy]]
-            [clojure.pprint :refer [pprint]])
+            [clojure.pprint :refer [pprint]]
+            [clojure.data.json :as json])
   (:import (com.github.davidmoten.rtree RTree)
            (com.github.davidmoten.rtree.geometry Geometries))
   (:gen-class))
+
+(defn shape->vega-data
+  [shape]
+  {:x1 (first (first shape))
+   :y1 (first (second shape))
+   :x2 (second (first shape))
+   :y2 (second (second shape))})
+
+(defn export-as-vega-lite
+  [tree]
+  (let [{:keys [nodes rectangles points]} (shapes-collector (:root tree))]
+    {:background "white",
+     :config {:gridOpacity 0}
+     :width      1000
+     :height     1000
+     :layer      [{:data     {:values (->> nodes
+                                           (map shape)
+                                           (mapv shape->vega-data))}
+                   :mark     "rect"
+                   :encoding {:x       {:field "x1", :type "quantitative"},
+                              :x2      {:field "x2"},
+                              :y       {:field "y1", :type "quantitative"},
+                              :y2      {:field "y2"},
+                              :opacity {:value 0.5}
+                              :stroke  {:value "#023858"}}}
+                  {:data     {:values (->> points
+                                           (map collect-points)
+                                           (mapv shape->vega-data))}
+                   :mark     "circle"
+                   :encoding {:color {:value "#3690c0"}
+                              :x      {:field "x1", :type "quantitative"},
+                              :x2     {:field "x2"},
+                              :y      {:field "y1", :type "quantitative"},
+                              :y2     {:field "y2"}}}
+                  {:data     {:values (->> rectangles
+                                           (map shape)
+                                           (mapv shape->vega-data))}
+                   :mark     "rect"
+                   :encoding {:x      {:field "x1", :type "quantitative"},
+                              :x2     {:field "x2"},
+                              :y      {:field "y1", :type "quantitative"},
+                              :y2     {:field "y2"},
+                              :stroke {:value "#74a9cf"}
+                              :opacity {:value 0.8}}}]}))
 
 (defn -main []
   (let [random-shapes (fn [] (let [min-x (rand-int 500000)

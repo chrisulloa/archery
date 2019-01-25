@@ -228,7 +228,7 @@
        (linear-seeds-across-dimensions)
        (fast-max-by :norm-separation ##Inf)
        (:seeds)
-       (map #(RectangleNode. leaf? [%] (shape %)))))
+       (map #(RectangleNode. leaf? [%] (collect-points %)))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
