@@ -2,6 +2,8 @@
 
 Clojure RTree implementation, using functional zippers. Very much a work in progress.
 
+![alt text](https://raw.githubusercontent.com/chrisulloa/archery/master/doc/visualization%20(2).png)
+
 ## Features
 * Visualizations
   * Vega JSON Output
