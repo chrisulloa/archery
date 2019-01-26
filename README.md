@@ -16,6 +16,7 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
     * ChooseLeaf
     * AdjustTree
     * NodeSplitting
+    * BulkLoading
   * Deletion
     * FindLeaf
     * CondenseTree
