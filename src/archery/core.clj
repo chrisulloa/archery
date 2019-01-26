@@ -35,7 +35,7 @@
                               :opacity {:value 0.5}
                               :stroke  {:value "#023858"}}}
                   {:data     {:values (->> points
-                                           (map collect-points)
+                                           (map rectangle-shape)
                                            (mapv shape->vega-data))}
                    :mark     "circle"
                    :encoding {:color {:value "#3690c0"}
@@ -59,30 +59,30 @@
                                    max-x (+ min-x (rand-int 100000))
                                    min-y (rand-int 500000)
                                    max-y (+ min-y (rand-int 100000))]
-                               [[min-x max-x] [min-y max-y]]))
+                               [min-x min-y max-x max-y]))
         sample (take 1000 (repeatedly random-shapes))
         small-sample (take 20 (repeatedly random-shapes))
-        create-rectangle (fn [[[x-min x-max] [y-min y-max]]]
+        create-rectangle (fn [[x-min y-min x-max y-max]]
                            (Geometries/rectangle (double x-min)
                                                  (double y-min)
                                                  (double x-max)
                                                  (double y-max)))]
     (println "Example Clojure RTree")
-    (pprint (datafy (reduce insert (rtree) (map ->Rectangle small-sample))))
+    (pprint (datafy (reduce insert (rtree) (map #(apply (partial ->Rectangle) %) small-sample))))
     (println "\nExample Java RTree")
-    (println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
-    (println "Starting benchmark: Inserting 1,000 rectangles.")
+    ;(println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
+    ;(println "Starting benchmark: Inserting 1,000 rectangles.")
+    ;(time
+    ;  (do
+    ;    (dotimes [n 10]
+    ;      (println (format "Java RTree Iteration %s" n))
+    ;      (time
+    ;        (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))
+    ;    (println "For all runs:")))
     (time
       (do
-        (dotimes [n 10]
-          (println (format "Java RTree Iteration %s" n))
-          (time
-            (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))
-        (println "For all runs:")))
-    (time
-      (do
-        (dotimes [n 10]
+        (dotimes [n 50]
           (println (format "Clojure RTree Iteration %s" n))
           (time
-            (reduce insert (rtree {:max-children 4, :min-children 2}) (map ->Rectangle sample))))
+            (reduce insert (rtree {:max-children 4, :min-children 2}) (map #(apply (partial ->Rectangle) %) sample))))
         (println "For all runs:")))))
