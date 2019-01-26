@@ -1,66 +1,95 @@
 (ns archery.shape
   (:require [archery.util :refer [abs fast-contains? distinct-by fast-min-by fast-max-by]]
-            [clojure.core.protocols :refer [Datafiable datafy]])
-  (:import (clojure.lang IPersistentCollection)))
+            [clojure.core.protocols :refer [Datafiable datafy]]))
 
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
   (branch? [node] "Can this node have children?")
-  (count-children [node] "Count children.")
-  (children [node] "Children of node.")
+  (compress [node geometry] "Compress this node with a new geometry as child.")
+  (add-child [node child] "Add a child to the node.")
+  (best-node-for-insertion [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
   (make-node [node children] "Makes new node from existing node and new children."))
 
 (defprotocol Geometry
-  (dim [geom] "Dimension of the given geometry")
+  (area-enlargement-diff [geom1 geom2] "Area of mbr around this shape and the other")
   (area [geom] "Area of the given geometry")
   (shape [geom] "The defined shape of the geometry.")
-  (collect-points [geom] "Points of a given geometry."))
+  (rectangle-shape [geom] "Points of a given geometry."))
 
-(defrecord Rectangle [shape]
+(defrecord Rectangle [x1 y1 x2 y2]
   Datafiable
-  (datafy [_] {:type :Rectangle, :shape shape})
+  (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
-  (dim [_] (count shape))
-  (area [_] (transduce (map #(reduce - (reverse %))) * shape))
-  (shape [_] shape)
-  (collect-points [_] shape)
-  TreeNode
-  (branch? [_] false)
-  (children [_] nil))
+  (area [_] (* (- x2 x1) (- y2 y1)))
+  (shape [_] [x1 y1 x2 y2])
+  (rectangle-shape [_] [x1 y1 x2 y2]))
 
-(defrecord Point [shape]
+(defrecord Point [x y]
   Datafiable
-  (datafy [_] {:type :Point, :shape shape})
+  (datafy [_] {:type :Point, :shape [x y]})
   Geometry
-  (dim [_] (count shape))
   (area [_] 0)
-  (shape [_] shape)
-  (collect-points [_] (map (partial repeat 2) shape))
-  TreeNode
-  (branch? [_] false)
-  (children [_] nil))
+  (shape [_] [x y])
+  (rectangle-shape [_] [x y x y]))
 
-(deftype RectangleNode [^boolean leaf? ^IPersistentCollection children ^IPersistentCollection shape]
+(defn minimum-bounding-rectangle
+  ([s] (apply ->Rectangle (rectangle-shape s)))
+  ([s1 s2]
+   (let [[s1-x1 s1-y1 s1-x2 s1-y2] (rectangle-shape s1)
+         [s2-x1 s2-y1 s2-x2 s2-y2] (rectangle-shape s2)]
+     (->Rectangle (min s1-x1 s2-x1) (min s1-y1 s2-y1)
+                  (max s1-x2 s2-x2) (max s1-y2 s2-y2))))
+  ([s1 s2 & shapes]
+   (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
+
+(defrecord RectangleNode [leaf? children x1 y1 x2 y2]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
-               :shape shape,
+               :shape [x1 y1 x2 y2],
                :children (mapv datafy children)})
   Geometry
-  (dim [_] (count shape))
-  (area [_] (transduce (map #(reduce - (reverse %))) * shape))
-  (shape [_] shape)
-  (collect-points [_] shape)
+  (area [_] (* (- x2 x1) (- y2 y1)))
+  (area-enlargement-diff
+    [_ geom]
+    (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
+      (- (* (- (max x2 s-x2) (min x1 s-x1))
+            (- (max y2 s-y2) (min y1 s-y1)))
+         (* (- x2 x1) (- y2 y1)))))
+  (shape [_] [x1 y1 x2 y2])
+  (rectangle-shape [_] [x1 y1 x2 y2])
   TreeNode
+  (best-node-for-insertion
+    [_ shape-to-insert]
+    (loop [[node & rest-nodes] children
+           best-node {:shape [], :area-diff ##Inf}]
+      (if node
+        (let [area-diff (area-enlargement-diff node shape-to-insert)]
+          (if (zero? area-diff)
+            (shape node)
+            (if (< area-diff (:area-diff best-node))
+              (recur rest-nodes {:shape (shape node), :area-diff area-diff})
+              (recur rest-nodes best-node))))
+        (:shape best-node))))
+  (compress
+    [rn geom]
+    (let [new-children (if geom (conj children geom) children)]
+      (if-not (empty? new-children)
+        (->> new-children
+             (apply minimum-bounding-rectangle)
+             (shape)
+             (apply (partial ->RectangleNode leaf? new-children)))
+        rn)))
   (leaf? [_] leaf?)
   (branch? [_] true)
-  (count-children [_] (count children))
-  (children [_] children)
+  (add-child [_ child]
+    (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
   (children-nodes [_] (when-not leaf? children))
-  (make-node [_ new-children] (RectangleNode. leaf? new-children shape)))
+  (make-node [node new-children]
+    (apply (partial ->RectangleNode leaf? new-children) (shape node))))
 
-(defrecord RTree [^RectangleNode root dimension max-children min-children]
+(defrecord RTree [root dimension max-children min-children]
   Datafiable
   (datafy [_] {:type :RTree
                :root (datafy root),
@@ -71,7 +100,7 @@
 (defn rtree
   ([]
    (map->RTree
-     {:root (->RectangleNode true [] []), :max-children 4, :min-children 2, :dimension 2}))
+     {:root (->RectangleNode true [] 0 0 0 0), :max-children 4, :min-children 2, :dimension 2}))
   ([params]
    (merge (rtree) params)))
 
@@ -83,68 +112,68 @@
 
 (defmethod envelops? [Rectangle Point]
   [r p]
-  (letfn [(envelops-by-dim? [[[r-min r-max] p]]
-            (<= r-min p r-max))]
-    (->> (interleave (:shape r) (:shape p))
-         (partition 2)
-         (map envelops-by-dim?)
-         (every? true?))))
+  (and (<= (:x1 r) (:x p) (:x2 r))
+       (<= (:y1 r) (:y p) (:y2 r))))
 
 (defmethod envelops? [RectangleNode Point]
-  [rn p]
-  (envelops? (->Rectangle (shape rn)) p))
+  [r p]
+  (and (<= (:x1 r) (:x p) (:x2 r))
+       (<= (:y1 r) (:y p) (:y2 r))))
 
 (defmethod envelops? [Rectangle Rectangle]
   [r1 r2]
-  (letfn [(envelops-by-dim? [[[r1-min r1-max] [r2-min r2-max]]]
-            (<= r1-min r2-min r2-max r1-max))]
-    (->> (interleave (:shape r1) (:shape r2))
-         (partition 2)
-         (map envelops-by-dim?)
-         (every? true?))))
+  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
+       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
 (defmethod envelops? [RectangleNode RectangleNode]
-  [rn1 rn2]
-  (envelops? (->Rectangle (shape rn1)) (->Rectangle (shape rn2))))
+  [r1 r2]
+  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
+       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
 (defmethod envelops? [RectangleNode Rectangle]
-  [rn r]
-  (envelops? (->Rectangle (shape rn)) r))
+  [r1 r2]
+  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
+       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
 (defmethod envelops? [Rectangle RectangleNode]
-  [r rn]
-  (envelops? r (->Rectangle (shape rn))))
+  [r1 r2]
+  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
+       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
 (defmethod envelops? [Point Point]
-  [p1 p2] (= (:shape p1) (:shape p2)))
+  [p1 p2]
+  (= (shape p1) (shape p2)))
 
 (defmulti intersects?
           (fn [x y] [(class x) (class y)]))
 
 (defmethod intersects? [Rectangle Rectangle]
   [r1 r2]
-  (letfn [(intersects-by-dim?
-            [[r1p r2p]]
-            (not (or (> (first r1p) (second r2p))
-                     (> (first r2p) (second r1p)))))]
-    (->> (interleave (:shape r1) (:shape r2))
-         (partition 2)
-         (map intersects-by-dim?)
-         (some true?)
-         (nil?)
-         (not))))
+  (and (not (or (> (:x1 r1) (:x2 r2))
+                (> (:x1 r2) (:x2 r1))))
+       (not (or (> (:y1 r1) (:y2 r2))
+                (> (:y1 r2) (:y2 r1))))))
 
 (defmethod intersects? [RectangleNode RectangleNode]
-  [rn1 rn2]
-  (intersects? (->Rectangle (shape rn1)) (->Rectangle (shape rn2))))
+  [r1 r2]
+  (and (not (or (> (:x1 r1) (:x2 r2))
+                (> (:x1 r2) (:x2 r1))))
+       (not (or (> (:y1 r1) (:y2 r2))
+                (> (:y1 r2) (:y2 r1))))))
 
 (defmethod intersects? [RectangleNode Rectangle]
-  [rn r]
-  (intersects? (->Rectangle (shape rn)) r))
+  [r1 r2]
+  (and (not (or (> (:x1 r1) (:x2 r2))
+                (> (:x1 r2) (:x2 r1))))
+       (not (or (> (:y1 r1) (:y2 r2))
+                (> (:y1 r2) (:y2 r1))))))
 
 (defmethod intersects? [Rectangle RectangleNode]
-  [r rn]
-  (intersects? (->Rectangle (shape rn)) r))
+  [r1 r2]
+  (and (not (or (> (:x1 r1) (:x2 r2))
+                (> (:x1 r2) (:x2 r1))))
+       (not (or (> (:y1 r1) (:y2 r2))
+                (> (:y1 r2) (:y2 r1))))))
 
 (defmethod intersects? [Point Point]
   [p1 p2] (= (:shape p1) (:shape p2)))
@@ -155,72 +184,36 @@
 
 (defmethod intersects? [RectangleNode Point]
   [rn p]
-  (envelops? (->Rectangle (shape rn)) p))
+  (envelops? rn p))
 
 (defmethod intersects? [Point Rectangle]
   [p r] (intersects? r p))
 
 (defmethod intersects? [Point RectangleNode]
-  [p rn] (intersects? (shape rn) p))
-
-(defn minimum-bounding-rectangle
-  ([s] (->Rectangle (collect-points s)))
-  ([s1 s2]
-   (->Rectangle
-     (into [] (map (juxt #(reduce min %) #(reduce max %)))
-           (map concat (collect-points s1) (collect-points s2)))))
-  ([s1 s2 & shapes]
-    (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
-
-(defn compress-node
-  "Adjusts boundary for tight fit, after adding extra shapes if needed."
-  ([rn]
-   (let [children (children rn)]
-     (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
-       rn)))
-  ([rn geom]
-   (let [children (conj (children rn) geom)]
-     (if-not (empty? children)
-       (RectangleNode. (leaf? rn) children (shape (apply minimum-bounding-rectangle children)))
-       rn)))
-  ([rn geom & geoms]
-   (reduce compress-node (compress-node rn geom) geoms)))
-
-(defn area-enlargement-diff
-  "Difference in area of rectangle node before and after
-   enlargement with a shape"
-  [^RectangleNode node shape]
-  (- (area (minimum-bounding-rectangle node shape))
-     (area node)))
-
-(defn best-node-for-insertion
-  [nodes shape-to-insert]
-  (loop [[node & rest-nodes] nodes
-         best-node {:shape [], :area-diff ##Inf}]
-    (if node
-      (let [area-diff (area-enlargement-diff node shape-to-insert)]
-        (if (zero? area-diff)
-          (shape node)
-          (if (< area-diff (:area-diff best-node))
-            (recur rest-nodes {:shape (shape node), :area-diff area-diff})
-            (recur rest-nodes best-node))))
-      (:shape best-node))))
+  [p rn] (intersects? rn p))
 
 (defn linear-seeds-across-dimensions
   [shapes]
-  (for [d (range (dim (first shapes)))]
-    (let [max-lb (apply max-key (comp first #(nth % d) collect-points) shapes)
-          min-ub (apply min-key (comp second #(nth % d) collect-points) shapes)]
-      (if (= (shape max-lb) (shape min-ub))
-        (let [distinct-shapes (distinct-by shape shapes)]
-          {:norm-separation ##Inf,
-           :seeds           [(first distinct-shapes) (second distinct-shapes)]})
-        {:norm-separation (/ (- (-> max-lb collect-points (nth d) first)
-                                (-> min-ub collect-points (nth d) second))
-                             (- (apply max (map (comp second #(nth % d) collect-points) shapes))
-                                (apply min (map (comp first #(nth % d) collect-points) shapes))))
-         :seeds           [min-ub max-lb]}))))
+  (let [x-max-lb (apply max-key (comp first rectangle-shape) shapes)
+        x-min-ub (apply min-key (comp #(nth % 2) rectangle-shape) shapes)
+        y-max-lb (apply max-key (comp second rectangle-shape) shapes)
+        y-min-ub (apply min-key (comp last rectangle-shape) shapes)]
+    [(if (= (shape x-max-lb) (shape x-min-ub))
+       {:norm-separation ##Inf
+        :seeds (take 2 (distinct-by shape shapes))}
+       {:norm-separation (/ (- (-> x-max-lb rectangle-shape first)
+                               (-> x-min-ub rectangle-shape (nth 2)))
+                            (- (apply max (map (comp #(nth % 2) rectangle-shape) shapes))
+                               (apply min (map (comp first rectangle-shape) shapes))))
+        :seeds [x-max-lb x-min-ub]})
+     (if (= (shape y-max-lb) (shape y-min-ub))
+       {:norm-separation ##Inf
+        :seeds (take 2 (distinct-by shape shapes))}
+       {:norm-separation (/ (- (-> y-max-lb rectangle-shape second)
+                               (-> y-min-ub rectangle-shape last))
+                            (- (apply max (map (comp last rectangle-shape) shapes))
+                               (apply min (map (comp second rectangle-shape) shapes))))
+        :seeds [y-max-lb y-min-ub]})]))
 
 (defn linear-seeds
   [shapes leaf?]
@@ -228,30 +221,30 @@
        (linear-seeds-across-dimensions)
        (fast-max-by :norm-separation ##Inf)
        (:seeds)
-       (map #(RectangleNode. leaf? [%] (collect-points %)))))
+       (map #(apply (partial ->RectangleNode leaf? [%]) (rectangle-shape %)))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
   (if (<= (area-enlargement-diff r-seed shape)
           (area-enlargement-diff l-seed shape))
-    [(compress-node r-seed shape) l-seed]
-    [r-seed (compress-node l-seed shape)]))
+    [(compress r-seed shape) l-seed]
+    [r-seed (compress l-seed shape)]))
 
 (defn linear-split [rn min-children]
-  (let [seeds (linear-seeds (children rn) (leaf? rn))]
+  (let [seeds (linear-seeds (:children rn) (leaf? rn))]
     (loop [r-seed (first seeds)
            l-seed (second seeds)
-           shapes (remove #{(-> r-seed children first)
-                            (-> l-seed children first)} (children rn))]
+           shapes (remove #{(-> r-seed :children first)
+                            (-> l-seed :children first)} (:children rn))]
       (if-not (empty? shapes)
         (cond
-          (= min-children (+ (count-children r-seed) (count shapes)))
-          (recur (apply compress-node r-seed shapes)
+          (= min-children (+ (count (:children r-seed)) (count shapes)))
+          (recur (reduce compress r-seed shapes)
                  l-seed
                  nil)
-          (= min-children (+ (count-children l-seed) (count shapes)))
+          (= min-children (+ (count (:children l-seed)) (count shapes)))
           (recur r-seed
-                 (apply compress-node l-seed shapes)
+                 (reduce compress l-seed shapes)
                  nil)
           :else
           (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]

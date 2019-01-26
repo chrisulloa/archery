@@ -11,7 +11,7 @@
   ([loc node1 node2]
    (let [[_ {r :r :as path}] loc]
      (if (nil? path)
-       (with-meta [(compress-node (->RectangleNode false [] []) node1 node2)
+       (with-meta [(reduce compress (->RectangleNode false [] 0 0 0 0) [node1 node2])
                    (assoc path :changed? true)]
                   (meta loc))
        (with-meta [node1 (assoc path :r (cons node2 r) :changed? true)]
@@ -46,7 +46,7 @@
                      loc
                      (zip/replace loc new-node))
            next-loc (zip/next new-loc)]
-       (if (or (zip/end? next-loc) (= stop true))
+       (if (or (zip/end? next-loc) stop)
          {:node (zip/root new-loc) :state new-state}
          (recur next-loc new-state))))))
 
@@ -65,7 +65,9 @@
                      (apply replace-node loc new-node))
            next-loc (if (:inserted? new-state)
                       (zip/up new-loc)
-                      (zip/next new-loc))]
-       (if (or (nil? next-loc) (zip/end? next-loc) stop)
+                      (if (:move-down? new-state)
+                        (zip/down new-loc)
+                        (zip/next new-loc)))]
+       (if (or stop (nil? next-loc) (zip/end? next-loc))
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))
