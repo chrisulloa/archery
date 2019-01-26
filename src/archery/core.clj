@@ -67,7 +67,7 @@
                                                  (double x-max)
                                                  (double y-max)))]
     (println "Example Clojure RTree")
-    (pprint (datafy (reduce insert (rtree) (map #(apply (partial ->Rectangle) %) small-sample))))
+    (pprint (datafy (insert (rtree) (map #(apply (partial ->Rectangle) %) small-sample))))
     (println "\nExample Java RTree")
     (println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
     (println "Starting benchmark: Inserting 1,000 rectangles.")
@@ -83,5 +83,6 @@
         (dotimes [n 50]
           (println (format "Clojure RTree Iteration %s" n))
           (time
-            (reduce insert (rtree {:max-children 4, :min-children 2}) (map #(apply (partial ->Rectangle) %) sample))))
+            (insert (rtree {:max-children 4, :min-children 2}) (map #(apply (partial ->Rectangle) %) sample))))
         (println "For all runs:")))))
+(-main)

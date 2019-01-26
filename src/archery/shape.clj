@@ -6,7 +6,8 @@
   (leaf? [node] "Is this node a leaf?")
   (branch? [node] "Can this node have children?")
   (compress [node geometry] "Compress this node with a new geometry as child.")
-  (children [node] "Children of node.")
+  (add-child [node child] "Add a child to the node.")
+  (best-node-for-insertion [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
   (make-node [node children] "Makes new node from existing node and new children."))
 
@@ -22,10 +23,7 @@
   Geometry
   (area [_] (* (- x2 x1) (- y2 y1)))
   (shape [_] [x1 y1 x2 y2])
-  (rectangle-shape [_] [x1 y1 x2 y2])
-  TreeNode
-  (branch? [_] false)
-  (children [_] nil))
+  (rectangle-shape [_] [x1 y1 x2 y2]))
 
 (defrecord Point [x y]
   Datafiable
@@ -33,17 +31,15 @@
   Geometry
   (area [_] 0)
   (shape [_] [x y])
-  (rectangle-shape [_] [x y x y])
-  TreeNode
-  (branch? [_] false)
-  (children [_] nil))
+  (rectangle-shape [_] [x y x y]))
 
 (defn minimum-bounding-rectangle
   ([s] (apply ->Rectangle (rectangle-shape s)))
   ([s1 s2]
    (let [[s1-x1 s1-y1 s1-x2 s1-y2] (rectangle-shape s1)
          [s2-x1 s2-y1 s2-x2 s2-y2] (rectangle-shape s2)]
-     (->Rectangle (min s1-x1 s2-x1) (min s1-y1 s2-y1) (max s1-x2 s2-x2) (max s1-y2 s2-y2))))
+     (->Rectangle (min s1-x1 s2-x1) (min s1-y1 s2-y1)
+                  (max s1-x2 s2-x2) (max s1-y2 s2-y2))))
   ([s1 s2 & shapes]
    (reduce minimum-bounding-rectangle (minimum-bounding-rectangle s1 s2) shapes)))
 
@@ -64,6 +60,18 @@
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2])
   TreeNode
+  (best-node-for-insertion
+    [_ shape-to-insert]
+    (loop [[node & rest-nodes] children
+           best-node {:shape [], :area-diff ##Inf}]
+      (if node
+        (let [area-diff (area-enlargement-diff node shape-to-insert)]
+          (if (zero? area-diff)
+            (shape node)
+            (if (< area-diff (:area-diff best-node))
+              (recur rest-nodes {:shape (shape node), :area-diff area-diff})
+              (recur rest-nodes best-node))))
+        (:shape best-node))))
   (compress
     [rn geom]
     (let [new-children (if geom (conj children geom) children)]
@@ -75,9 +83,11 @@
         rn)))
   (leaf? [_] leaf?)
   (branch? [_] true)
-  (children [_] children)
+  (add-child [_ child]
+    (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
   (children-nodes [_] (when-not leaf? children))
-  (make-node [node new-children] (apply (partial ->RectangleNode leaf? new-children) (shape node))))
+  (make-node [node new-children]
+    (apply (partial ->RectangleNode leaf? new-children) (shape node))))
 
 (defrecord RTree [root dimension max-children min-children]
   Datafiable
@@ -182,19 +192,6 @@
 (defmethod intersects? [Point RectangleNode]
   [p rn] (intersects? rn p))
 
-(defn best-node-for-insertion
-  [nodes shape-to-insert]
-  (loop [[node & rest-nodes] nodes
-         best-node {:shape [], :area-diff ##Inf}]
-    (if node
-      (let [area-diff (area-enlargement-diff node shape-to-insert)]
-        (if (zero? area-diff)
-          (shape node)
-          (if (< area-diff (:area-diff best-node))
-            (recur rest-nodes {:shape (shape node), :area-diff area-diff})
-            (recur rest-nodes best-node))))
-      (:shape best-node))))
-
 (defn linear-seeds-across-dimensions
   [shapes]
   (let [x-max-lb (apply max-key (comp first rectangle-shape) shapes)
@@ -234,18 +231,18 @@
     [r-seed (compress l-seed shape)]))
 
 (defn linear-split [rn min-children]
-  (let [seeds (linear-seeds (children rn) (leaf? rn))]
+  (let [seeds (linear-seeds (:children rn) (leaf? rn))]
     (loop [r-seed (first seeds)
            l-seed (second seeds)
-           shapes (remove #{(-> r-seed children first)
-                            (-> l-seed children first)} (children rn))]
+           shapes (remove #{(-> r-seed :children first)
+                            (-> l-seed :children first)} (:children rn))]
       (if-not (empty? shapes)
         (cond
-          (= min-children (+ (count (children r-seed)) (count shapes)))
+          (= min-children (+ (count (:children r-seed)) (count shapes)))
           (recur (reduce compress r-seed shapes)
                  l-seed
                  nil)
-          (= min-children (+ (count (children l-seed)) (count shapes)))
+          (= min-children (+ (count (:children l-seed)) (count shapes)))
           (recur r-seed
                  (reduce compress l-seed shapes)
                  nil)
