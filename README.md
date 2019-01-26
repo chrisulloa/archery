@@ -30,11 +30,10 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
 * Benchmarks
 
 ## References
-
+Alex Miller: Tree visitors in Clojure
 https://www.ibm.com/developerworks/library/j-treevisit/
 
-https://github.com/davidmoten/rtree
-
+A. Guttman. R-trees: A Dynamic Index Structure for Spatial Searching. Proceedings of ACM SIGMOD, pages 47-57, 1984.
 http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf
 
 ## License
