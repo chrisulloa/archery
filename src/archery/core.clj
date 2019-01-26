@@ -85,4 +85,3 @@
           (time
             (insert (rtree {:max-children 4, :min-children 2}) (map #(apply (partial ->Rectangle) %) sample))))
         (println "For all runs:")))))
-(-main)

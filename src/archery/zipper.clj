@@ -65,7 +65,9 @@
                      (apply replace-node loc new-node))
            next-loc (if (:inserted? new-state)
                       (zip/up new-loc)
-                      (zip/next new-loc))]
+                      (if (:move-down? new-state)
+                        (zip/down new-loc)
+                        (zip/next new-loc)))]
        (if (or stop (nil? next-loc) (zip/end? next-loc))
          {:node (zip/root new-loc), :state new-state}
          (recur next-loc new-state))))))

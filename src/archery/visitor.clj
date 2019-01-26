@@ -88,8 +88,9 @@
         (if (leaf? node)
           {:node  (add-child node shape-to-insert),
            :state {:inserted? true}}
-          {:state {:next-node (best-node-for-insertion node shape-to-insert)}})
-        {:next true}))))
+          {:state {:next-node (best-node-for-insertion node shape-to-insert),
+                   :move-down? (= (shape node) (:next-node state))}})
+        {:next true, :state {:move-down? false}}))))
 
 (defn insert
   [tree geoms]
