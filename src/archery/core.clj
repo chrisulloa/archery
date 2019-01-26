@@ -70,15 +70,15 @@
     (println "Example Clojure RTree")
     (pprint (datafy (reduce insert (rtree) (map #(apply (partial ->Rectangle) %) small-sample))))
     (println "\nExample Java RTree")
-    ;(println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
-    ;(println "Starting benchmark: Inserting 1,000 rectangles.")
-    ;(time
-    ;  (do
-    ;    (dotimes [n 10]
-    ;      (println (format "Java RTree Iteration %s" n))
-    ;      (time
-    ;        (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))
-    ;    (println "For all runs:")))
+    (println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
+    (println "Starting benchmark: Inserting 1,000 rectangles.")
+    (time
+      (do
+        (dotimes [n 10]
+          (println (format "Java RTree Iteration %s" n))
+          (time
+            (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))
+        (println "For all runs:")))
     (time
       (do
         (dotimes [n 50]
