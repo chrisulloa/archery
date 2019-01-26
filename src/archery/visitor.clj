@@ -83,14 +83,14 @@
   [shape-to-insert]
   (fn [node state]
     (when-not (:inserted? state)
-      (if (or (not (:next-node state))
-              (= (shape node) (:next-node state)))
-        (if (leaf? node)
-          {:node  (add-child node shape-to-insert),
-           :state {:inserted? true}}
-          {:state {:next-node (best-node-for-insertion node shape-to-insert),
-                   :move-down? (= (shape node) (:next-node state))}})
-        {:next true, :state {:move-down? false}}))))
+      (let [found-best-shape? (= (shape node) (:next-node state))]
+        (if (or (not (:next-node state)) found-best-shape?)
+          (if (leaf? node)
+            {:node  (add-child node shape-to-insert),
+             :state {:inserted? true}}
+            {:state {:next-node  (best-node-for-insertion node shape-to-insert),
+                     :move-down? found-best-shape?}})
+          {:next true, :state {:move-down? false}})))))
 
 (defn insert
   [tree geoms]
