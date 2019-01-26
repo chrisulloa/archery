@@ -88,16 +88,16 @@
           (if (leaf? node)
             {:node  (add-child node shape-to-insert),
              :state {:inserted? true}}
-            {:state {:next-node  (best-node-for-insertion node shape-to-insert),
-                     :move-down? found-best-shape?}})
+            {:state {:next-node  (best-child-for-insertion node shape-to-insert),
+                     :move-down? found-best-shape?},
+             :next  true})
           {:next true, :state {:move-down? false}})))))
 
 (defn insert
   [tree geoms]
   (let [root (:root tree)
         min-children (:min-children tree)
-        max-children (:max-children tree)
-        dimension (:dimension tree)]
+        max-children (:max-children tree)]
     (loop [[geom & rest-geoms] geoms
            root root]
       (if geom
@@ -106,4 +106,4 @@
                         (zipper root)
                         [(insert-visitor geom)
                          (adjust-node-visitor min-children max-children)])))
-        (->RTree root dimension min-children max-children)))))
+        (->RTree root min-children max-children)))))

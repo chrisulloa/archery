@@ -7,7 +7,7 @@
   (branch? [node] "Can this node have children?")
   (compress [node geometry] "Compress this node with a new geometry as child.")
   (add-child [node child] "Add a child to the node.")
-  (best-node-for-insertion [node shape] "Find best child node to insert shape into.")
+  (best-child-for-insertion [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
   (make-node [node children] "Makes new node from existing node and new children."))
 
@@ -60,7 +60,7 @@
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2])
   TreeNode
-  (best-node-for-insertion
+  (best-child-for-insertion
     [_ shape-to-insert]
     (loop [[node & rest-nodes] children
            best-node {:shape [], :area-diff ##Inf}]
@@ -89,18 +89,17 @@
   (make-node [node new-children]
     (apply (partial ->RectangleNode leaf? new-children) (shape node))))
 
-(defrecord RTree [root dimension max-children min-children]
+(defrecord RTree [root max-children min-children]
   Datafiable
   (datafy [_] {:type :RTree
                :root (datafy root),
-               :dimension dimension,
                :max-children max-children,
                :min-children min-children}))
 
 (defn rtree
   ([]
    (map->RTree
-     {:root (->RectangleNode true [] 0 0 0 0), :max-children 4, :min-children 2, :dimension 2}))
+     {:root (->RectangleNode true [] 0 0 0 0), :max-children 4, :min-children 2}))
   ([params]
    (merge (rtree) params)))
 
