@@ -6,8 +6,7 @@
   (:import (com.github.davidmoten.rtree RTree)
            (com.github.davidmoten.rtree.geometry Geometries))
   (:gen-class))
-(set!
-  *warn-on-reflection* true)
+
 (defn shape->vega-data
   [shape]
   {:x1 (first (first shape))
