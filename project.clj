@@ -7,6 +7,4 @@
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [com.github.davidmoten/rtree "0.8.6"]
-                 [com.github.davidmoten/grumpy-core "0.2.3"]
-                 [org.clojure/data.json "0.2.6"]])
+                 [com.github.davidmoten/rtree "0.8.6"]])

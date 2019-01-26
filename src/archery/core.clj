@@ -4,8 +4,7 @@
             [archery.visitor :refer :all]
             [archery.util :refer :all]
             [clojure.core.protocols :refer [datafy]]
-            [clojure.pprint :refer [pprint]]
-            [clojure.data.json :as json])
+            [clojure.pprint :refer [pprint]])
   (:import (com.github.davidmoten.rtree RTree)
            (com.github.davidmoten.rtree.geometry Geometries))
   (:gen-class))
