@@ -1,5 +1,5 @@
 (ns archery.core
-  (:require [archery.shape :refer [shape rectangle-shape ->Rectangle rtree]]
+  (:require [archery.shape :refer [shape rectangle-shape ->Point ->Rectangle rtree]]
             [archery.visitor :refer [shapes-collector insert]]
             [clojure.core.protocols :refer [datafy]]
             [clojure.pprint :refer [pprint]])
@@ -57,29 +57,30 @@
                                    min-y (rand-int 500000)
                                    max-y (+ min-y (rand-int 100000))]
                                [min-x min-y max-x max-y]))
-        sample (take 10000 (repeatedly random-shapes))
+        sample (take 5000 (repeatedly random-shapes))
         small-sample (take 20 (repeatedly random-shapes))
-        create-rectangle (fn [[x-min y-min x-max y-max]]
-                           (Geometries/rectangle (double x-min)
-                                                 (double y-min)
-                                                 (double x-max)
-                                                 (double y-max)))]
+        create-rectangle (fn [[x1 y1 x2 y2]]
+                           (->Rectangle x1 y1 x2 y2))
+        create-java-rectangle (fn [[x-min y-min x-max y-max]]
+                                (Geometries/rectangle (double x-min)
+                                                      (double y-min)
+                                                      (double x-max)
+                                                      (double y-max)))]
     (println "Example Clojure RTree")
-    (pprint (datafy (insert (rtree) (map #(apply (partial ->Rectangle) %) small-sample))))
+    (pprint (datafy (insert (rtree) (map create-rectangle small-sample))))
     (println "\nExample Java RTree")
-    (println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle small-sample))))
-    (println "Starting benchmark: Inserting 1,000 rectangles.")
+    (println (.asString (reduce #(.add %1 nil %2) (RTree/create) (map create-java-rectangle small-sample))))
+    (println "Starting benchmark: Inserting 5,000 rectangles.")
     (time
       (do
-        (dotimes [n 10]
-          (println (format "Java RTree Iteration %s" n))
-          (time
-            (reduce #(.add %1 nil %2) (RTree/create) (map create-rectangle sample))))
+        (dotimes [n 25]
+          (println (format "Clojure RTree Iteration %s" n))
+          (time (insert (rtree) (map create-rectangle sample))))
         (println "For all runs:")))
     (time
       (do
-        (dotimes [n 50]
-          (println (format "Clojure RTree Iteration %s" n))
+        (dotimes [n 25]
+          (println (format "Java RTree Iteration %s" n))
           (time
-            (insert (rtree {:max-children 4, :min-children 2}) (map #(apply (partial ->Rectangle) %) sample))))
+            (reduce #(.add %1 nil %2) (RTree/create) (map create-java-rectangle sample))))
         (println "For all runs:")))))

@@ -74,20 +74,26 @@
         (:shape best-node))))
   (compress
     [rn geom]
-    (let [new-children (if geom (conj children geom) children)]
+    (let [new-children (if geom (conj children geom) children)
+          new-node (fn [[x1 y1 x2 y2]]
+                     (->RectangleNode leaf? new-children x1 y1 x2 y2))]
       (if-not (empty? new-children)
         (->> new-children
              (apply minimum-bounding-rectangle)
              (shape)
-             (apply (partial ->RectangleNode leaf? new-children)))
+             (new-node))
         rn)))
   (leaf? [_] leaf?)
   (branch? [_] true)
   (add-child [_ child]
     (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
   (children-nodes [_] (when-not leaf? children))
-  (make-node [node new-children]
-    (apply (partial ->RectangleNode leaf? new-children) (shape node))))
+  (make-node [_ new-children]
+    (->RectangleNode leaf? new-children x1 y1 x2 y2)))
+
+(defn rectangle-node
+  [leaf? children [x1 y1 x2 y2]]
+  (->RectangleNode leaf? children x1 y1 x2 y2))
 
 (defrecord RTree [root max-children min-children]
   Datafiable
@@ -193,26 +199,46 @@
 
 (defn linear-seeds-across-dimensions
   [shapes]
-  (let [x-max-lb (apply max-key (comp first rectangle-shape) shapes)
-        x-min-ub (apply min-key (comp #(nth % 2) rectangle-shape) shapes)
-        y-max-lb (apply max-key (comp second rectangle-shape) shapes)
-        y-min-ub (apply min-key (comp last rectangle-shape) shapes)]
-    [(if (= (shape x-max-lb) (shape x-min-ub))
-       {:norm-separation ##Inf
-        :seeds (take 2 (distinct-by shape shapes))}
-       {:norm-separation (/ (- (-> x-max-lb rectangle-shape first)
-                               (-> x-min-ub rectangle-shape (nth 2)))
-                            (- (apply max (map (comp #(nth % 2) rectangle-shape) shapes))
-                               (apply min (map (comp first rectangle-shape) shapes))))
-        :seeds [x-max-lb x-min-ub]})
-     (if (= (shape y-max-lb) (shape y-min-ub))
-       {:norm-separation ##Inf
-        :seeds (take 2 (distinct-by shape shapes))}
-       {:norm-separation (/ (- (-> y-max-lb rectangle-shape second)
-                               (-> y-min-ub rectangle-shape last))
-                            (- (apply max (map (comp last rectangle-shape) shapes))
-                               (apply min (map (comp second rectangle-shape) shapes))))
-        :seeds [y-max-lb y-min-ub]})]))
+  (loop [[geom & geoms] shapes
+         splits {:x-max-lb ##-Inf, :x-min-ub ##Inf,
+                 :x-min-lb ##Inf, :x-max-ub ##-Inf
+                 :y-max-lb ##-Inf, :y-min-ub ##Inf
+                 :y-min-lb ##Inf, :y-max-ub ##-Inf}]
+    (if geom
+      (recur
+        geoms
+        (let [rectangle (apply ->Rectangle (rectangle-shape geom))]
+          (cond-> splits
+                  (< (:x-max-lb splits) (:x1 rectangle))
+                  (assoc :x-max-lb (:x1 rectangle) :x-max-lb-shape geom)
+                  (> (:x-min-ub splits) (:x2 rectangle))
+                  (assoc :x-min-ub (:x2 rectangle) :x-min-ub-shape geom)
+                  (> (:x-min-lb splits) (:x1 rectangle))
+                  (assoc :x-min-lb (:x1 rectangle))
+                  (< (:x-max-ub splits) (:x2 rectangle))
+                  (assoc :x-max-ub (:x2 rectangle))
+                  (< (:y-max-lb splits) (:y1 rectangle))
+                  (assoc :y-max-lb (:y1 rectangle) :y-max-lb-shape geom)
+                  (> (:y-min-ub splits) (:y2 rectangle))
+                  (assoc :y-min-ub (:y2 rectangle) :y-min-ub-shape geom)
+                  (> (:y-min-lb splits) (:y1 rectangle))
+                  (assoc :y-min-lb (:y1 rectangle))
+                  (< (:y-max-ub splits) (:y2 rectangle))
+                  (assoc :y-max-ub (:y2 rectangle)))))
+      (let [{:keys [x-max-lb x-max-lb-shape
+                    x-min-ub x-min-ub-shape
+                    x-min-lb x-max-ub
+                    y-max-lb y-max-lb-shape
+                    y-min-ub y-min-ub-shape
+                    y-min-lb y-max-ub]} splits]
+        [(if (= x-max-lb-shape x-min-ub-shape)
+           {:norm-separation ##Inf, :seeds (take 2 (distinct-by shape shapes))}
+           {:norm-separation (/ (- x-max-lb x-min-ub) (- x-max-ub x-min-lb)),
+            :seeds [x-max-lb-shape x-min-ub-shape]})
+         (if (= y-max-lb-shape y-min-ub-shape)
+           {:norm-separation ##Inf, :seeds (take 2 (distinct-by shape shapes))}
+           {:norm-separation (/ (- y-max-lb y-min-ub) (- y-max-ub y-min-lb))
+            :seeds [y-max-lb-shape y-min-ub-shape]})]))))
 
 (defn linear-seeds
   [shapes leaf?]
@@ -220,7 +246,7 @@
        (linear-seeds-across-dimensions)
        (fast-max-by :norm-separation ##Inf)
        (:seeds)
-       (map #(apply (partial ->RectangleNode leaf? [%]) (rectangle-shape %)))))
+       (map #(rectangle-node leaf? [%] (rectangle-shape %)))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
