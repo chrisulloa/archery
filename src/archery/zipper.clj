@@ -1,13 +1,14 @@
 (ns archery.zipper
   (:require [clojure.zip :as zip]
-            [archery.shape :refer :all]))
+            [archery.shape :refer [->RectangleNode branch?
+                                   children-nodes make-node compress]]))
 
 (defn zipper [node]
   (zip/zipper branch? children-nodes make-node node))
 
 (defn replace-node
   ([loc node]
-    (zip/replace loc node))
+   (zip/replace loc node))
   ([loc node1 node2]
    (let [[_ {r :r :as path}] loc]
      (if (nil? path)
@@ -24,10 +25,10 @@
          [first-visitor & rest-visitors] visitors]
     (let [context (merge {:node node, :state state, :stop false, :next false}
                          (first-visitor node state))
-          {new-node  :node
+          {new-node :node
            new-state :state
-           stop      :stop
-           next      :next} context]
+           stop :stop
+           next :next} context]
       (if (or next stop (nil? rest-visitors))
         {:node new-node, :state new-state, :stop stop}
         (recur new-node new-state rest-visitors)))))

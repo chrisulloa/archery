@@ -1,6 +1,8 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
-            [archery.shape :refer :all]
+            [archery.shape :refer [leaf? compress linear-split
+                                   envelops? intersects? shape
+                                   add-child best-child-for-insertion ->RTree]]
             [archery.util :refer [fast-contains?]])
   (:import [archery.shape Rectangle Point]))
 
@@ -9,7 +11,7 @@
   [node state]
   (when (leaf? node)
     {:state (conj state node)
-     :next  true}))
+     :next true}))
 
 (defn node-contains-shape-visitor
   "Visitor that returns node which contains shape."
@@ -19,7 +21,7 @@
                (envelops? node shape)
                (fast-contains? (:children node) shape))
       {:state node
-       :stop  true})))
+       :stop true})))
 
 (defn enveloped-shapes-visitor
   "Visitor that returns shapes enveloped by given rectangle."
@@ -29,10 +31,10 @@
             (intersects? node rectangle))
       (when (leaf? node)
         {:state
-               (->> node
-                    :children
-                    (filter #(envelops? rectangle %))
-                    (concat state))
+         (->> node
+              :children
+              (filter #(envelops? rectangle %))
+              (concat state))
          :next true})
       {:next true})))
 
@@ -44,8 +46,8 @@
       {:state {:nodes (:nodes state)
                :rectangles (concat (:rectangles state)
                                    (filter #(= (class %) Rectangle) children))
-               :points     (concat (:points state)
-                                   (filter #(= (class %) Point) children))}})))
+               :points (concat (:points state)
+                               (filter #(= (class %) Point) children))}})))
 
 (defn shapes-collector
   "Collects all points"
@@ -75,9 +77,12 @@
   [min-children max-children]
   (fn [node state]
     (when (:inserted? state)
-      {:node (if (< max-children (count (:children node)))
-               (linear-split node min-children)
-               [(compress node nil)])})))
+      (if (< max-children (count (:children node)))
+        {:node (linear-split node min-children),
+         :child-split? true}
+        (if (or (:child-split? state) (:enlarged-node? state))
+          {:node [(compress node nil)]}
+          {:node [node], :stop true})))))
 
 (defn insert-visitor
   [shape-to-insert]
@@ -86,11 +91,12 @@
       (let [found-best-shape? (= (shape node) (:next-node state))]
         (if (or (not (:next-node state)) found-best-shape?)
           (if (leaf? node)
-            {:node  (add-child node shape-to-insert),
-             :state {:inserted? true}}
-            {:state {:next-node  (best-child-for-insertion node shape-to-insert),
+            {:node (add-child node shape-to-insert),
+             :state {:inserted? true,
+                     :enlarged-node? (not (envelops? node shape-to-insert))}}
+            {:state {:next-node (best-child-for-insertion node shape-to-insert),
                      :move-down? found-best-shape?},
-             :next  true})
+             :next true})
           {:next true, :state {:move-down? false}})))))
 
 (defn insert
