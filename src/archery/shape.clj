@@ -252,8 +252,8 @@
   [shape r-seed l-seed]
   (if (<= (area-enlargement-diff r-seed shape)
           (area-enlargement-diff l-seed shape))
-    [(compress r-seed shape) l-seed]
-    [r-seed (compress l-seed shape)]))
+    [(add-child r-seed shape) l-seed]
+    [r-seed (add-child l-seed shape)]))
 
 (defn linear-split [rn min-children]
   (let [seeds (linear-seeds (:children rn) (leaf? rn))]
@@ -264,14 +264,14 @@
       (if-not (empty? shapes)
         (cond
           (= min-children (+ (count (:children r-seed)) (count shapes)))
-          (recur (reduce compress r-seed shapes)
+          (recur (reduce add-child r-seed shapes)
                  l-seed
                  nil)
           (= min-children (+ (count (:children l-seed)) (count shapes)))
           (recur r-seed
-                 (reduce compress l-seed shapes)
+                 (reduce add-child l-seed shapes)
                  nil)
           :else
           (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
             (recur (first next-seeds) (second next-seeds) (rest shapes))))
-        [r-seed l-seed]))))
+        [(compress r-seed nil) (compress l-seed nil)]))))

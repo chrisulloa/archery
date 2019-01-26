@@ -12,7 +12,7 @@
   ([loc node1 node2]
    (let [[_ {r :r :as path}] loc]
      (if (nil? path)
-       (with-meta [(reduce compress (->RectangleNode false [] 0 0 0 0) [node1 node2])
+       (with-meta [(compress (->RectangleNode false [node1 node2] 0 0 0 0) nil)
                    (assoc path :changed? true)]
                   (meta loc))
        (with-meta [node1 (assoc path :r (cons node2 r) :changed? true)]

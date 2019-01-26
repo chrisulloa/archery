@@ -1,5 +1,5 @@
 (ns archery.core
-  (:require [archery.shape :refer [shape rectangle-shape ->Point ->Rectangle rtree]]
+  (:require [archery.shape :refer [shape rectangle-shape ->Rectangle rtree]]
             [archery.visitor :refer [shapes-collector insert]]
             [clojure.core.protocols :refer [datafy]]
             [clojure.pprint :refer [pprint]])
