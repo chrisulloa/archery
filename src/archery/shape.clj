@@ -1,5 +1,5 @@
 (ns archery.shape
-  (:require [archery.util :refer [distinct-by fast-min-by]]
+  (:require [archery.util :refer [distinct-by fast-min-key]]
             [clojure.core.protocols :refer [Datafiable datafy]]))
 
 (defprotocol TreeNode
@@ -66,7 +66,7 @@
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
   (best-child-for-insertion [_ geom]
     (when-not leaf?
-      (fast-min-by #(area-enlargement % geom) 0 children)))
+      (fast-min-key #(area-enlargement % geom) 0 children)))
   (compress [node]
     (if (empty? children)
       node
@@ -232,7 +232,7 @@
                          :x-min-lb ##Inf, :x-max-ub ##-Inf
                          :y-max-lb ##-Inf, :y-min-ub ##Inf
                          :y-min-lb ##Inf, :y-max-ub ##-Inf}]
-    (if geom
+    (if-not (nil? geom)
       (recur geoms (update-node-split-map node-split-map geom))
       (map #(rectangle-node leaf? [%] (rectangle-shape %))
            (node-split-map->seeds node-split-map shapes)))))

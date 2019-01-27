@@ -36,11 +36,11 @@
                     xs seen)))]
      (step coll #{}))))
 
-(defn fast-min-by
+(defn fast-min-key
   [f short-circuit-val coll]
   (loop [[val & rest-vals] coll
          min-val {:val val, :f-val ##Inf}]
-    (if (not val)
+    (if (nil? val)
       (:val min-val)
       (let [f-val (f val)]
         (if (= f-val short-circuit-val)
@@ -49,7 +49,7 @@
             (recur rest-vals {:val val :f-val f-val})
             (recur rest-vals min-val)))))))
 
-(defn fast-max-by
+(defn fast-max-key
   [f short-circuit-val coll]
   (loop [[val & rest-vals] coll
          max-val {:val val, :f-val ##-Inf}]

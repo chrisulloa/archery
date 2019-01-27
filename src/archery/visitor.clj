@@ -89,7 +89,7 @@
   (fn [node state]
     (when-not (:inserted? state)
       (let [found-best-shape? (= (shape node) (:next-node state))]
-        (if (or (not (:next-node state)) found-best-shape?)
+        (if (or found-best-shape? (nil? (:next-node state)))
           (if (leaf? node)
             {:node (add-child node shape-to-insert),
              :state {:inserted? true,
@@ -106,7 +106,7 @@
         max-children (:max-children tree)]
     (loop [[geom & rest-geoms] geoms
            root root]
-      (if geom
+      (if-not (nil? geom)
         (recur rest-geoms
                (:node (tree-inserter
                         (zipper root)
