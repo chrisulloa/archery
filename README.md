@@ -76,7 +76,8 @@ Some convenience functions to view and visualize the RTree:
                      :x2 {:field "x2"},
                      :y {:field "y1", :type "quantitative"},
                      :y2 {:field "y2"}}}
-         {:data {:values [{:x1 5.0, :y1 15.0, :x2 30.0, :y2 55.0} {:x1 0.0, :y1 0.0, :x2 10.0, :y2 10.0}]},
+         {:data {:values [{:x1 5.0, :y1 15.0, :x2 30.0, :y2 55.0}
+                          {:x1 0.0, :y1 0.0, :x2 10.0, :y2 10.0}]},
           :mark "rect",
           :encoding {:x {:field "x1", :type "quantitative"},
                      :x2 {:field "x2"},
