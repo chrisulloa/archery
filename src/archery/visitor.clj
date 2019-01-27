@@ -4,7 +4,7 @@
                                    envelops? intersects? shape
                                    add-child choose-child-for-insert ->RTree]]
             [archery.util :refer [fast-contains?]])
-  (:import [archery.shape Rectangle Point]))
+  (:import [archery.shape Rectangle Point RectangleNode]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
@@ -67,8 +67,8 @@
       (zipper node) [(node-contains-shape-visitor shape)])))
 
 (defn adjust-node-visitor
-  [min-children max-children]
-  (fn [node state]
+  [^Integer min-children ^Integer max-children]
+  (fn [^RectangleNode node state]
     (when (:inserted? state)
       (if (< max-children (count (:children node)))
         {:node (linear-split node min-children),
@@ -79,7 +79,7 @@
 
 (defn insert-visitor
   [shape-to-insert]
-  (fn [node state]
+  (fn [^RectangleNode node state]
     (when-not (:inserted? state)
       (let [found-best-shape? (= (shape node) (:next-node state))]
         (if (or found-best-shape? (nil? (:next-node state)))

@@ -22,7 +22,7 @@
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
-  (area [_] (* (- x2 x1) (- y2 y1)))
+  (area ^Double [_] (* (- x2 x1) (- y2 y1)))
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2]))
 
@@ -30,11 +30,11 @@
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
-  (area [_] 0)
+  (area ^Double [_] 0.0)
   (shape [_] [x y])
   (rectangle-shape [_] [x y x y]))
 
-(defn minimum-bounding-rectangle
+(defn minimum-bounding-rectangle ^Rectangle
   ([s] (apply ->Rectangle (rectangle-shape s)))
   ([s1 s2]
    (let [[s1-x1 s1-y1 s1-x2 s1-y2] (rectangle-shape s1)
@@ -46,15 +46,15 @@
            (minimum-bounding-rectangle s1 s2)
            shapes)))
 
-(defrecord RectangleNode [leaf? children x1 y1 x2 y2]
+(defrecord RectangleNode [leaf? children ^Double x1 ^Double y1 ^Double x2  ^Double y2]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
                :shape [x1 y1 x2 y2],
                :children (mapv datafy children)})
   Geometry
-  (area [_] (* (- x2 x1) (- y2 y1)))
-  (area-enlargement [node geom]
+  (area ^Double [_] (* (- x2 x1) (- y2 y1)))
+  (area-enlargement ^Double [node geom]
     (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
       (- (* (- (max x2 s-x2) (min x1 s-x1))
             (- (max y2 s-y2) (min y1 s-y1)))
@@ -62,12 +62,12 @@
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2])
   TreeNode
-  (reshape [_ [dx1 dy1 dx2 dy2]]
+  (reshape ^RectangleNode [_ [dx1 dy1 dx2 dy2]]
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
-  (choose-child-for-insert [_ geom]
+  (choose-child-for-insert ^RectangleNode [_ geom]
     (when-not leaf?
       (fast-min-key #(area-enlargement % geom) 0 children)))
-  (compress [node]
+  (compress ^RectangleNode [^RectangleNode node]
     (if (empty? children)
       node
       (->> children
@@ -77,12 +77,12 @@
   (leaf? [_] leaf?)
   (branch? [_] true)
   (children-nodes [_] (when-not leaf? children))
-  (add-child [_ child]
+  (add-child ^RectangleNode [_ child]
     (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
-  (make-node [_ new-children]
+  (make-node ^RectangleNode [_ new-children]
     (->RectangleNode leaf? new-children x1 y1 x2 y2)))
 
-(defn rectangle-node
+(defn rectangle-node ^RectangleNode
   [leaf? children [x1 y1 x2 y2]]
   (->RectangleNode leaf? children x1 y1 x2 y2))
 
@@ -231,13 +231,13 @@
            (node-split-map->seeds node-split-map shapes)))))
 
 (defn shape->seeds
-  [shape r-seed l-seed]
+  [shape ^RectangleNode r-seed ^RectangleNode l-seed]
   (if (<= (area-enlargement r-seed shape)
           (area-enlargement l-seed shape))
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
-(defn linear-split [rn min-children]
+(defn linear-split [^RectangleNode rn ^Integer min-children]
   (let [seeds (linear-seeds (:children rn) (leaf? rn))]
     (loop [r-seed (first seeds)
            l-seed (second seeds)

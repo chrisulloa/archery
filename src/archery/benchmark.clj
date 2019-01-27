@@ -4,7 +4,8 @@
             [clojure.core.protocols :refer [datafy]]
             [clojure.pprint :refer [pprint]])
   (:import (com.github.davidmoten.rtree RTree)
-           (com.github.davidmoten.rtree.geometry Geometries Rectangle)))
+           (com.github.davidmoten.rtree.geometry Geometries Rectangle))
+  (:gen-class))
 
 (defn add-to-java-rtree
   ^RTree
@@ -58,3 +59,5 @@
                     (RTree/create)
                     (map create-java-rectangle sample))))
         (println "For all runs:")))))
+
+(defn -main [] (bench-against-java-library))
