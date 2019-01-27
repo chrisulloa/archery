@@ -31,7 +31,8 @@
     [(double min-x) (double min-y) (double max-x) (double max-y)]))
 
 (defn -main []
-  (let [sample (take 20000 (repeatedly random-shapes))
+  (let [sample-size 20000
+        sample (take sample-size (repeatedly random-shapes))
         smaller-sample (take 20 (repeatedly random-shapes))
         create-rectangle (fn [[x1 y1 x2 y2]] (->Rectangle x1 y1 x2 y2))
         create-java-rectangle (fn [[x-min y-min x-max y-max]]
@@ -43,7 +44,7 @@
       (java-rtree->string (reduce add-to-java-rtree
                                   (RTree/create)
                                   (map create-java-rectangle smaller-sample))))
-    (println "Starting benchmark: Inserting 5,000 rectangles.")
+    (println (format "Starting benchmark: Inserting %s rectangles.") sample-size)
     (time
       (do
         (dotimes [n 25]
