@@ -5,8 +5,8 @@
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
   (branch? [node] "Can this node have children?")
-  (compress [node] "Compress this node to fit its children.")
-  (reshape [node new-shape] "Reshape the node.")
+  (compress [node] "Compress this node's shape to fit its children.")
+  (reshape [node new-shape] "Clone this node with new shape.")
   (add-child [node child] "Add a child to the node.")
   (best-child-for-insertion [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
@@ -65,7 +65,8 @@
   (reshape [_ [dx1 dy1 dx2 dy2]]
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
   (best-child-for-insertion [_ geom]
-    (fast-max-by #(area-enlargement % geom) 0 children))
+    (when-not leaf?
+      (fast-max-by #(area-enlargement % geom) 0 children)))
   (compress [node]
     (if (empty? children)
       node
