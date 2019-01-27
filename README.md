@@ -93,7 +93,6 @@ Some convenience functions to view and visualize the RTree:
     - [ ] RadiusSearch
     - [ ] ShapeIntersects
     - [x] RectangleContains
-    - [x] AllShapes
   * Insertion
     - [ ] ChooseLeaf
     - [x] AdjustTree
