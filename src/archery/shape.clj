@@ -169,66 +169,71 @@
 
 (defmethod intersects? [Point RectangleNode] [p rn] (intersects? rn p))
 
-(defn update-node-split-map
-  [node-split-map geom]
-  (let [rectangle (apply ->Rectangle (rectangle-shape geom))]
-    (cond-> node-split-map
-            (< (:x-max-lb node-split-map) (:x1 rectangle))
-            (assoc :x-max-lb (:x1 rectangle) :x-max-lb-shape geom)
-            (> (:x-min-ub node-split-map) (:x2 rectangle))
-            (assoc :x-min-ub (:x2 rectangle) :x-min-ub-shape geom)
-            (> (:x-min-lb node-split-map) (:x1 rectangle))
-            (assoc :x-min-lb (:x1 rectangle))
-            (< (:x-max-ub node-split-map) (:x2 rectangle))
-            (assoc :x-max-ub (:x2 rectangle))
-            (< (:y-max-lb node-split-map) (:y1 rectangle))
-            (assoc :y-max-lb (:y1 rectangle) :y-max-lb-shape geom)
-            (> (:y-min-ub node-split-map) (:y2 rectangle))
-            (assoc :y-min-ub (:y2 rectangle) :y-min-ub-shape geom)
-            (> (:y-min-lb node-split-map) (:y1 rectangle))
-            (assoc :y-min-lb (:y1 rectangle))
-            (< (:y-max-ub node-split-map) (:y2 rectangle))
-            (assoc :y-max-ub (:y2 rectangle)))))
+(defprotocol NodeSplit
+  (update-ns [_ geom] "Updates the ns-map with best seed values.")
+  (normalized-separation-x [_] "With the given data computes normalized separation.")
+  (normalized-separation-y [_] "With the given data computes normalized separation.")
+  (seeds [_ shapes] "Returns seeds, either min-ub/max-lb shapes or two distinct from initial set."))
 
-(defn normalized-separation
-  [max-lb-shape min-ub-shape max-lb min-ub max-ub min-lb]
-  (if (= max-lb-shape min-ub-shape)
-    ##Inf
-    (/ (- max-lb min-ub) (- max-ub min-lb))))
+(defrecord NodeSplitMap [x-max-lb-shape x-min-ub-shape
+                         x-max-lb x-min-ub x-min-lb x-max-ub
+                         y-max-lb-shape y-min-ub-shape
+                         y-max-lb y-min-ub y-min-lb y-max-ub]
+  NodeSplit
+  (update-ns [ns-map geom]
+    (let [rectangle (apply ->Rectangle (rectangle-shape geom))]
+      (cond-> ns-map
+              (< x-max-lb (:x1 rectangle))
+              (assoc :x-max-lb (:x1 rectangle) :x-max-lb-shape geom)
+              (> x-min-ub (:x2 rectangle))
+              (assoc :x-min-ub (:x2 rectangle) :x-min-ub-shape geom)
+              (> x-min-lb (:x1 rectangle))
+              (assoc :x-min-lb (:x1 rectangle))
+              (< x-max-ub (:x2 rectangle))
+              (assoc :x-max-ub (:x2 rectangle))
+              (< y-max-lb (:y1 rectangle))
+              (assoc :y-max-lb (:y1 rectangle) :y-max-lb-shape geom)
+              (> y-min-ub (:y2 rectangle))
+              (assoc :y-min-ub (:y2 rectangle) :y-min-ub-shape geom)
+              (> y-min-lb (:y1 rectangle))
+              (assoc :y-min-lb (:y1 rectangle))
+              (< y-max-ub (:y2 rectangle))
+              (assoc :y-max-ub (:y2 rectangle)))))
+  (normalized-separation-x [_]
+    (if (= x-max-lb-shape x-min-ub-shape)
+      ##Inf (/ (- x-max-lb x-min-ub) (- x-max-ub x-min-lb))))
+  (normalized-separation-y [_]
+    (if (= y-max-lb-shape y-min-ub-shape)
+      ##Inf (/ (- y-max-lb y-min-ub) (- y-max-ub y-min-lb))))
+  (seeds [ns-map shapes]
+    (let [norm-sep-x (normalized-separation-x ns-map)
+          norm-sep-y (normalized-separation-y ns-map)]
+      (if (> norm-sep-x norm-sep-y)
+        (if (Double/isInfinite norm-sep-x)
+          (take 2 (distinct-by shape shapes))
+          [y-max-lb-shape y-min-ub-shape])
+        (if (Double/isInfinite norm-sep-y)
+          (take 2 (distinct-by shape shapes))
+          [x-max-lb-shape x-min-ub-shape])))))
 
-(defn node-split-map->seeds
-  [node-split-map shapes]
-  (let [{:keys [x-max-lb x-max-lb-shape
-                x-min-ub x-min-ub-shape
-                x-min-lb x-max-ub
-                y-max-lb y-max-lb-shape
-                y-min-ub y-min-ub-shape
-                y-min-lb y-max-ub]} node-split-map
-        x-normalized-separation (normalized-separation
-                                  x-max-lb-shape x-min-ub-shape
-                                  x-max-lb x-min-ub x-max-ub x-min-lb)
-        y-normalized-separation (normalized-separation
-                                  y-max-lb-shape y-min-ub-shape
-                                  y-max-lb y-min-ub y-max-ub y-min-lb)]
-    (if (> x-normalized-separation y-normalized-separation)
-      (if (Double/isInfinite x-normalized-separation)
-        (take 2 (distinct-by shape shapes))
-        [y-max-lb-shape y-min-ub-shape])
-      (if (Double/isInfinite y-normalized-separation)
-        (take 2 (distinct-by shape shapes))
-        [x-max-lb-shape x-min-ub-shape]))))
+(defn initial-node-split-map []
+  (map->NodeSplitMap
+    {:x-min-ub-shape nil, :x-max-lb-shape nil
+     :x-max-lb ##-Inf, :x-min-ub ##Inf,
+     :x-min-lb ##Inf, :x-max-ub ##-Inf,
+     :y-min-ub-shape nil, :y-max-lb-shape nil
+     :y-max-lb ##-Inf, :y-min-ub ##Inf
+     :y-min-lb ##Inf, :y-max-ub ##-Inf}))
 
 (defn linear-seeds
   [shapes leaf?]
-  (loop [[geom & geoms] shapes
-         node-split-map {:x-max-lb ##-Inf, :x-min-ub ##Inf,
-                         :x-min-lb ##Inf, :x-max-ub ##-Inf
-                         :y-max-lb ##-Inf, :y-min-ub ##Inf
-                         :y-min-lb ##Inf, :y-max-ub ##-Inf}]
-    (if-not (nil? geom)
-      (recur geoms (update-node-split-map node-split-map geom))
-      (map #(rectangle-node leaf? [%] (rectangle-shape %))
-           (node-split-map->seeds node-split-map shapes)))))
+  (letfn [(shape->node [s]
+            (rectangle-node leaf? [s] (rectangle-shape s)))]
+    (loop [[geom & geoms] shapes
+           ns-map (initial-node-split-map)]
+      (if-not (nil? geom)
+        (recur geoms (update-ns ns-map geom))
+        (map shape->node (seeds ns-map shapes))))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
@@ -237,7 +242,8 @@
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
-(defn linear-split [rn min-children]
+(defn linear-split
+  [rn min-children]
   (let [seeds (linear-seeds (:children rn) (leaf? rn))]
     (loop [r-seed (first seeds)
            l-seed (second seeds)

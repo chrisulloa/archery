@@ -22,6 +22,10 @@
   [^RTree rtree]
   (.asString rtree))
 
+(defn make-java-rtree
+  ^RTree []
+  (.create (.maxChildren (RTree/minChildren 2) 4)))
+
 (defn random-shapes []
   (let [min-x (rand-int 500000)
         max-x (+ min-x (rand-int 100000))
@@ -30,7 +34,7 @@
     [(double min-x) (double min-y) (double max-x) (double max-y)]))
 
 (defn bench-against-java-library []
-  (let [sample-size 10000
+  (let [sample-size 20000
         sample (take sample-size (repeatedly random-shapes))
         smaller-sample (take 20 (repeatedly random-shapes))
         create-rectangle (fn [[x1 y1 x2 y2]] (->Rectangle x1 y1 x2 y2))
@@ -56,7 +60,7 @@
           (println (format "Java RTree Iteration %s" n))
           (time
             (reduce add-to-java-rtree
-                    (RTree/create)
+                    (make-java-rtree)
                     (map create-java-rectangle sample))))
         (println "For all runs:")))))
 
