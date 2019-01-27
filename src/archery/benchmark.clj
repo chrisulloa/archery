@@ -4,7 +4,8 @@
             [clojure.core.protocols :refer [datafy]]
             [clojure.pprint :refer [pprint]])
   (:import (com.github.davidmoten.rtree RTree)
-           (com.github.davidmoten.rtree.geometry Geometries Rectangle)))
+           (com.github.davidmoten.rtree.geometry Geometries Rectangle))
+  (:gen-class))
 
 (defn add-to-java-rtree
   ^RTree
@@ -29,7 +30,7 @@
     [(double min-x) (double min-y) (double max-x) (double max-y)]))
 
 (defn bench-against-java-library []
-  (let [sample-size 20000
+  (let [sample-size 10000
         sample (take sample-size (repeatedly random-shapes))
         smaller-sample (take 20 (repeatedly random-shapes))
         create-rectangle (fn [[x1 y1 x2 y2]] (->Rectangle x1 y1 x2 y2))
@@ -58,3 +59,5 @@
                     (RTree/create)
                     (map create-java-rectangle sample))))
         (println "For all runs:")))))
+
+(defn -main [] (bench-against-java-library))
