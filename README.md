@@ -4,30 +4,36 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
 
 <img src="https://raw.githubusercontent.com/chrisulloa/archery/master/doc/visualization%20(2).png" width="550">
 
+## Examples
+
 ## Features
-* Visualizations
-  * Vega JSON Output
+
 * Algorithms
   * Searching
-    * RadiusSearch
-    * ShapeIntersects
-    * ShapeContains
+    - [ ] RadiusSearch
+    - [ ] ShapeIntersects
+    - [x] RectangleContains
+    - [x] AllShapes
   * Insertion
-    * ChooseLeaf
-    * AdjustTree
-    * NodeSplitting
-    * BulkLoading
+    - [ ] ChooseLeaf
+    - [x] AdjustTree
+    - [ ] BulkLoading
   * Deletion
-    * FindLeaf
-    * CondenseTree
+    - [ ] FindLeaf
+    - [ ] CondenseTree
   * Updating
   * Splitting
-    * QuadraticSplit
-    * LinearSplit
-    * R\*TreeNodeSplit
-* N-Dimensions
-  * Hilbert RTree
+    - [ ] QuadraticSplit
+    - [x] LinearSplit
+    - [ ] R\*TreeNodeSplit
+* Future Plans
+   - [ ] Hilbert RTree
+   - [ ] Geohash
+   - [ ] Z-Order Space Filling Curve
+* Visualizations
+  - [ ] Vega JSON Output
 * Benchmarks
+  - [ ] Criterium
 
 ## References
 Alex Miller: Tree visitors in Clojure

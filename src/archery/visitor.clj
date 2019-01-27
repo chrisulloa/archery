@@ -98,18 +98,3 @@
                      :move-down? found-best-shape?},
              :next true})
           {:next true, :state {:move-down? false}})))))
-
-(defn insert
-  [tree geoms]
-  (let [root (:root tree)
-        min-children (:min-children tree)
-        max-children (:max-children tree)]
-    (loop [[geom & rest-geoms] geoms
-           root root]
-      (if-not (nil? geom)
-        (recur rest-geoms
-               (:node (tree-inserter
-                        (zipper root)
-                        [(insert-visitor geom)
-                         (adjust-node-visitor min-children max-children)])))
-        (->RTree root min-children max-children)))))

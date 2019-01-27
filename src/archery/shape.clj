@@ -93,13 +93,6 @@
                :max-children max-children,
                :min-children min-children}))
 
-(defn rtree
-  ([] (map->RTree
-        {:root (->RectangleNode true [] 0.0 0.0 0.0 0.0),
-         :max-children 4,
-         :min-children 2}))
-  ([params] (merge (rtree) params)))
-
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
 (defmethod envelops? [Point Rectangle] [_ _] false)
