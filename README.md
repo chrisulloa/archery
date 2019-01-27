@@ -5,6 +5,7 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
 <img src="https://raw.githubusercontent.com/chrisulloa/archery/master/doc/visualization%20(2).png" width="550">
 
 ## Examples
+To create and load an RTree with shapes:
 ```
 (use '[rtree.core])
 
@@ -14,7 +15,20 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
                           (->Rectangle 0.0 0.0 10.0 10.0)
                           (->Rectangle 5.0 15.0 30.0 55.0)
                           (->Point 3.0 10.0)]))
+```
 
+You can also search by a shape that has an envelops? function:
+```
+(search tree (->Rectangle 0.0 0.0 50.0 50.0))
+;=>
+(#archery.shape.Point{:x 33.3, :y 45.0}
+ #archery.shape.Rectangle{:x1 0.0, :y1 0.0, :x2 10.0, :y2 10.0}
+ #archery.shape.Point{:x 0.5, :y 10.5}
+ #archery.shape.Point{:x 3.0, :y 10.0})
+```
+
+Some convenience functions to view and visualize the RTree:
+```
 ;; Human readable representation of tree
 (datafy tree)
 ;=>
@@ -36,13 +50,7 @@ Clojure RTree implementation, using functional zippers. Very much a work in prog
                                {:type :Point, :shape [0.5 10.5]}
                                {:type :Point, :shape [3.0 10.0]}]}]}}
                                
-;; Find all shapes contained in this rectangle
-(search tree (->Rectangle 0.0 0.0 50.0 50.0))
-;=>
-(#archery.shape.Point{:x 33.3, :y 45.0}
- #archery.shape.Rectangle{:x1 0.0, :y1 0.0, :x2 10.0, :y2 10.0}
- #archery.shape.Point{:x 0.5, :y 10.5}
- #archery.shape.Point{:x 3.0, :y 10.0})
+
  
 (use '[archery.visualization])
 (tree->vega-lite tree)
