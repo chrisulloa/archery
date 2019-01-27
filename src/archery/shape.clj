@@ -1,6 +1,7 @@
 (ns archery.shape
   (:require [archery.util :refer [distinct-by fast-min-key]]
-            [clojure.core.protocols :refer [Datafiable datafy]]))
+            [clojure.core.protocols :refer [Datafiable datafy]])
+  (:import (clojure.lang PersistentVector IPersistentCollection)))
 
 (defprotocol TreeNode
   (leaf? [node] "Is this node a leaf?")
@@ -18,21 +19,21 @@
   (shape [geom] "The defined shape of the geometry.")
   (rectangle-shape [geom] "Points of a given geometry."))
 
-(defrecord Rectangle [x1 y1 x2 y2]
+(defrecord Rectangle [^Double x1 ^Double y1 ^Double x2 ^Double y2]
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
   (area ^Double [_] (* (- x2 x1) (- y2 y1)))
-  (shape [_] [x1 y1 x2 y2])
-  (rectangle-shape [_] [x1 y1 x2 y2]))
+  (shape ^PersistentVector [_] [x1 y1 x2 y2])
+  (rectangle-shape ^PersistentVector [_] [x1 y1 x2 y2]))
 
 (defrecord Point [x y]
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
   (area ^Double [_] 0.0)
-  (shape [_] [x y])
-  (rectangle-shape [_] [x y x y]))
+  (shape ^PersistentVector [_] [x y])
+  (rectangle-shape ^PersistentVector [_] [x y x y]))
 
 (defn minimum-bounding-rectangle ^Rectangle
   ([s] (apply ->Rectangle (rectangle-shape s)))
@@ -46,7 +47,8 @@
            (minimum-bounding-rectangle s1 s2)
            shapes)))
 
-(defrecord RectangleNode [leaf? children ^Double x1 ^Double y1 ^Double x2  ^Double y2]
+(defrecord RectangleNode
+  [^Boolean leaf? ^IPersistentCollection children ^Double x1 ^Double y1 ^Double x2  ^Double y2]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
@@ -54,15 +56,15 @@
                :children (mapv datafy children)})
   Geometry
   (area ^Double [_] (* (- x2 x1) (- y2 y1)))
-  (area-enlargement ^Double [node geom]
-    (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
+  (area-enlargement ^Double [^RectangleNode node geom]
+    (let [[^Double s-x1 ^Double s-y1 ^Double s-x2 ^Double s-y2] (rectangle-shape geom)]
       (- (* (- (max x2 s-x2) (min x1 s-x1))
             (- (max y2 s-y2) (min y1 s-y1)))
          (* (area node)))))
-  (shape [_] [x1 y1 x2 y2])
-  (rectangle-shape [_] [x1 y1 x2 y2])
+  (shape ^PersistentVector [_] [x1 y1 x2 y2])
+  (rectangle-shape ^PersistentVector [_] [x1 y1 x2 y2])
   TreeNode
-  (reshape ^RectangleNode [_ [dx1 dy1 dx2 dy2]]
+  (reshape ^RectangleNode [_ [^Double dx1 ^Double dy1 ^Double dx2 ^Double dy2]]
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
   (choose-child-for-insert ^RectangleNode [_ geom]
     (when-not leaf?
@@ -74,8 +76,8 @@
            (apply minimum-bounding-rectangle)
            (shape)
            (reshape node))))
-  (leaf? [_] leaf?)
-  (branch? [_] true)
+  (leaf? ^Boolean [_] leaf?)
+  (branch? ^Boolean [_] true)
   (children-nodes [_] (when-not leaf? children))
   (add-child ^RectangleNode [_ child]
     (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
@@ -83,10 +85,10 @@
     (->RectangleNode leaf? new-children x1 y1 x2 y2)))
 
 (defn rectangle-node ^RectangleNode
-  [leaf? children [x1 y1 x2 y2]]
+  [^Boolean leaf? ^IPersistentCollection children [^Double x1 ^Double y1 ^Double x2 ^Double y2]]
   (->RectangleNode leaf? children x1 y1 x2 y2))
 
-(defrecord RTree [root max-children min-children]
+(defrecord RTree [^RectangleNode root ^Integer max-children ^Integer min-children]
   Datafiable
   (datafy [_] {:type :RTree,
                :max-children max-children,
@@ -112,18 +114,18 @@
   (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
-(defmethod envelops? [RectangleNode RectangleNode]
-  [r1 r2]
+(defmethod envelops? ^Boolean [RectangleNode RectangleNode]
+  [^RectangleNode r1 ^RectangleNode r2]
   (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
-(defmethod envelops? [RectangleNode Rectangle]
-  [r1 r2]
+(defmethod envelops? ^Boolean [RectangleNode Rectangle]
+  [^RectangleNode r1 ^Rectangle r2]
   (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
-(defmethod envelops? [Rectangle RectangleNode]
-  [r1 r2]
+(defmethod envelops? ^Boolean [Rectangle RectangleNode]
+  [^Rectangle r1 ^RectangleNode r2]
   (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
@@ -190,8 +192,8 @@
             (< (:y-max-ub node-split-map) (:y2 rectangle))
             (assoc :y-max-ub (:y2 rectangle)))))
 
-(defn normalized-separation
-  [max-lb-shape min-ub-shape max-lb min-ub max-ub min-lb]
+(defn normalized-separation ^Double
+  [max-lb-shape min-ub-shape ^Double max-lb ^Double min-ub ^Double max-ub ^Double min-lb]
   (if (= max-lb-shape min-ub-shape)
     ##Inf
     (/ (- max-lb min-ub) (- max-ub min-lb))))
