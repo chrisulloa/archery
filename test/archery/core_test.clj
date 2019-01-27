@@ -19,13 +19,14 @@
                                   [(->Point 60 60)
                                    (->Rectangle 55 55 60 60)]
                                   0 0 60 60)
-          root (->RectangleNode false [child1 child2] 0 0 50 50)]
+          root (->RectangleNode false [child1 child2] 0 0 50 50)
+          tree (->RTree root 2 4)]
       (is (= #{child1 child2} (set (leaf-collector root))))
       (is (= child1 (node-contains-shape-finder root (->Point 1 1))))
       (is (= child2 (node-contains-shape-finder root (->Rectangle 55 55 60 60))))
       (is (= nil (node-contains-shape-finder root (->Point 300 300))))
       (is (= #{(->Point 1 1) (->Point 5 5) (->Rectangle 10 10 15 15)}
-             (set (enveloped-shapes-collector root (->Rectangle 0 0 20 20))))))))
+             (set (search tree (->Rectangle 0 0 20 20))))))))
 
 (deftest test-minimum-bounding-rectangle
   (testing "Minimum bounding rectangle."

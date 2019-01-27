@@ -23,7 +23,7 @@
       {:state node
        :stop true})))
 
-(defn enveloped-shapes-visitor
+(defn enveloped-by-shape-visitor
   "Visitor that returns shapes enveloped by given rectangle."
   [rectangle]
   (fn [node state]
@@ -43,7 +43,7 @@
   (if-not (leaf? node)
     {:state (update state :nodes #(conj % node))}
     (let [children (:children node)]
-      {:state {:nodes (:nodes state)
+      {:state {:nodes (conj (:nodes state) node)
                :rectangles (concat (:rectangles state)
                                    (filter #(= (class %) Rectangle) children))
                :points (concat (:points state)
@@ -65,13 +65,6 @@
   (:state
     (tree-visitor
       (zipper node) [(node-contains-shape-visitor shape)])))
-
-(defn enveloped-shapes-collector
-  "Find entries which are enveloped by given rectangle."
-  [node rectangle]
-  (:state
-    (tree-visitor
-      (zipper node) [(enveloped-shapes-visitor rectangle)])))
 
 (defn adjust-node-visitor
   [min-children max-children]

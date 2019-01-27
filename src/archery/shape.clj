@@ -89,9 +89,9 @@
 (defrecord RTree [root max-children min-children]
   Datafiable
   (datafy [_] {:type :RTree,
-               :root (datafy root),
                :max-children max-children,
-               :min-children min-children}))
+               :min-children min-children
+               :root (datafy root)}))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 

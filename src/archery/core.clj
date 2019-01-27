@@ -1,9 +1,10 @@
 (ns archery.core
   (:require [archery.shape :refer [->RTree map->RTree ->RectangleNode ->Point ->Rectangle]]
-            [archery.visitor :refer [insert-visitor adjust-node-visitor]]
-            [archery.zipper :refer [zipper tree-inserter]]
+            [archery.visitor :refer [insert-visitor adjust-node-visitor enveloped-by-shape-visitor]]
+            [archery.zipper :refer [zipper tree-inserter tree-visitor]]
             [clojure.core.protocols :refer [datafy]]
             [clojure.pprint :refer [pprint]])
+  (:import [archery.shape Rectangle RectangleNode Point])
   (:gen-class))
 
 (defn rtree
@@ -21,4 +22,9 @@
                                (adjust-node-visitor (:min-children tree)
                                                     (:max-children tree))]))))
   ([tree geom & geoms]
-    (reduce insert (insert tree geom) geoms)))
+   (reduce insert (insert tree geom) geoms)))
+
+(defn search
+  ([tree r]
+     (:state (tree-visitor (zipper (:root tree)) [(enveloped-by-shape-visitor r)]))))
+
