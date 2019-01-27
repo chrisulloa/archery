@@ -1,10 +1,9 @@
 (ns archery.zipper
   (:require [clojure.zip :as zip]
-            [archery.shape :refer [->RectangleNode branch?
+            [archery.shape :refer [map->RectangleNode branch?
                                    children-nodes make-node compress]]))
 
-(defn zipper [node]
-  (zip/zipper branch? children-nodes make-node node))
+(defn zipper [node] (zip/zipper branch? children-nodes make-node node))
 
 (defn replace-node
   ([loc node]
@@ -12,7 +11,10 @@
   ([loc node1 node2]
    (let [[_ {r :r :as path}] loc]
      (if (nil? path)
-       (with-meta [(compress (->RectangleNode false [node1 node2] 0 0 0 0) nil)
+       (with-meta [(compress
+                     (map->RectangleNode {:leaf? false,
+                                          :children [node1 node2],
+                                          :x1 0.0, :y1 0.0, :x2 0.0, :y2 0.0}))
                    (assoc path :changed? true)]
                   (meta loc))
        (with-meta [node1 (assoc path :r (cons node2 r) :changed? true)]

@@ -81,7 +81,7 @@
         {:node (linear-split node min-children),
          :child-split? true}
         (if (or (:child-split? state) (:enlarged-node? state))
-          {:node [(compress node nil)]}
+          {:node [(compress node)]}
           {:node [node], :stop true})))))
 
 (defn insert-visitor

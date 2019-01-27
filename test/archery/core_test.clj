@@ -67,27 +67,23 @@
     (is (= [0 5 10 15] (rectangle-shape (->Rectangle 0 5 10 15))))))
 
 (deftest test-area-enlargement-diff
-  (is (= 25 (area-enlargement-diff (->RectangleNode true [] 0 0 5 5) (->Point 5 10)))))
+  (is (= 25 (area-enlargement (->RectangleNode true [] 0 0 5 5) (->Point 5 10)))))
 
 (deftest test-compress-rectangle
   (is (= [5 5 10 10]
-         (shape (compress (->RectangleNode true [] 5 5 10 10) nil))))
+         (shape (compress (->RectangleNode true [] 5 5 10 10)))))
   (is (= [5 5 5 5]
-         (shape (compress (->RectangleNode true [(->Point 5 5)] 0 0 0 0) nil))))
+         (shape (compress (->RectangleNode true [(->Point 5 5)] 0 0 0 0)))))
   (is (= [5 5 10 10]
-         (shape (reduce compress (->RectangleNode true [] 5 5 8 8)
-                        [(->Point 5 5)
-                         (->Point 5 10)
-                         (->Point 10 10)])))))
+         (shape (compress (->RectangleNode
+                            true [(->Point 5 5) (->Point 5 10) (->Point 10 10)]
+                            5 5 8 8))))))
 
 (deftest test-linear-seeds
   (let [shapes [(->Point 0 0)
                 (->Point 10 10)
                 (->Rectangle 0 6 3 8)
-                (->Rectangle 15 35 30 55)]
-        seeds (linear-seeds-across-dimensions shapes)]
-    (is (= (/ 15 30) (:norm-separation (first seeds))))
-    (is (= (/ 35 55) (:norm-separation (second seeds))))
+                (->Rectangle 15 35 30 55)]]
     (is (= (set [[15 35 30 55] [0 0 0 0]])
            (set (map shape (linear-seeds shapes true)))))))
 
