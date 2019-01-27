@@ -2,7 +2,7 @@
 
 Clojure RTree implementation, using functional zippers. Very much a work in progress.
 
-![alt text](https://raw.githubusercontent.com/chrisulloa/archery/master/doc/visualization%20(2).png)
+<img src="https://raw.githubusercontent.com/chrisulloa/archery/master/doc/visualization%20(2).png" width="550">
 
 ## Features
 * Visualizations
