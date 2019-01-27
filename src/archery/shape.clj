@@ -8,7 +8,7 @@
   (compress [node] "Compress this node's shape to fit its children.")
   (reshape [node new-shape] "Clone this node with new shape.")
   (add-child [node child] "Add a child to the node.")
-  (best-child-for-insertion [node shape] "Find best child node to insert shape into.")
+  (choose-child-for-insert [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
   (make-node [node children] "Makes new node from existing node and new children."))
 
@@ -64,7 +64,7 @@
   TreeNode
   (reshape [_ [dx1 dy1 dx2 dy2]]
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
-  (best-child-for-insertion [_ geom]
+  (choose-child-for-insert [_ geom]
     (when-not leaf?
       (fast-min-key #(area-enlargement % geom) 0 children)))
   (compress [node]

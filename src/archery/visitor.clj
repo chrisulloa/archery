@@ -2,7 +2,7 @@
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
             [archery.shape :refer [leaf? compress linear-split
                                    envelops? intersects? shape
-                                   add-child best-child-for-insertion ->RTree]]
+                                   add-child choose-child-for-insert ->RTree]]
             [archery.util :refer [fast-contains?]])
   (:import [archery.shape Rectangle Point]))
 
@@ -94,7 +94,7 @@
             {:node (add-child node shape-to-insert),
              :state {:inserted? true,
                      :enlarged-node? (not (envelops? node shape-to-insert))}}
-            {:state {:next-node (best-child-for-insertion node shape-to-insert),
+            {:state {:next-node (choose-child-for-insert node shape-to-insert),
                      :move-down? found-best-shape?},
              :next true})
           {:next true, :state {:move-down? false}})))))
