@@ -29,7 +29,6 @@ You can also search by a shape that has an envelops? function:
 
 Some convenience functions to view and visualize the RTree:
 ```
-;; Human readable representation of tree
 (datafy tree)
 ;=>
 {:type :RTree,
