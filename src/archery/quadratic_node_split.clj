@@ -6,6 +6,7 @@
             [archery.linear-node-split :refer [split]]
             [clojure.math.combinatorics :refer [combinations]]
             [clojure.set :refer [difference]]))
+
 (defprotocol SeedPair
   (inefficiency [_])
   (pair->node [_ leaf?]))
