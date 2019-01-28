@@ -1,7 +1,7 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
-            [archery.shape :refer [leaf? compress linear-split
-                                   envelops? intersects? shape
+            [archery.linear-node-split :refer [linear-split]]
+            [archery.shape :refer [leaf? compress envelops? intersects? shape
                                    add-child choose-child-for-insert ->RTree]]
             [archery.util :refer [fast-contains?]])
   (:import [archery.shape Rectangle Point]))
@@ -81,7 +81,7 @@
   [shape-to-insert]
   (fn [node state]
     (when-not (:inserted? state)
-      (let [found-best-shape? (= (shape node) (:next-node state))]
+      (let [found-best-shape? (= node (:next-node state))]
         (if (or found-best-shape? (nil? (:next-node state)))
           (if (leaf? node)
             {:node (add-child node shape-to-insert),
