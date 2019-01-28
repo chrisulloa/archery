@@ -9,22 +9,22 @@
 
 (defprotocol SeedPair
   (inefficiency [_])
-  (pair->node [_ leaf?]))
+  (pair->seeds [_ leaf?]))
 
 (defrecord QuadraticSeedPair [s1 s2]
   SeedPair
   (inefficiency [_]
     (- (area (minimum-bounding-rectangle s1 s2))
        (area s1) (area s2)))
-  (pair->node [_ leaf?]
-    (->> (minimum-bounding-rectangle s1 s2)
-         (rectangle-shape)
-         (rectangle-node leaf? [s1 s2]))))
+  (pair->seeds [_ leaf?]
+    (letfn [(shape->node [s]
+              (rectangle-node leaf? [s] (rectangle-shape s)))]
+    [(shape->node s1) (shape->node s2)])))
 
 (defn quadratic-seeds
   [shapes leaf?]
   (letfn [(seed-pair [[s1 s2]] (->QuadraticSeedPair s1 s2))]
-    (pair->node
+    (pair->seeds
       (->> (combinations shapes 2)
            (map seed-pair)
            (reduce #(max-key inefficiency %1 %2)))
@@ -32,4 +32,5 @@
 
 (defn quadratic-split
   [rn min-children]
-  (split (quadratic-seeds (:children rn) (leaf? rn)) min-children))
+  (let [children (:children rn)]
+    (split (quadratic-seeds children (leaf? rn)) children min-children)))

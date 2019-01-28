@@ -1,6 +1,5 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
-            [archery.linear-node-split :refer [linear-split]]
             [archery.shape :refer [leaf? compress envelops? intersects? shape
                                    add-child choose-child-for-insert ->RTree]]
             [archery.util :refer [fast-contains?]])
@@ -67,11 +66,11 @@
       (zipper node) [(node-contains-shape-visitor shape)])))
 
 (defn adjust-node-visitor
-  [min-children max-children]
+  [min-children max-children split-fn]
   (fn [node state]
     (when (:inserted? state)
       (if (< max-children (count (:children node)))
-        {:node (linear-split node min-children),
+        {:node (split-fn node min-children),
          :child-split? true}
         (if (or (:child-split? state) (:enlarged-node? state))
           {:node [(compress node)]}

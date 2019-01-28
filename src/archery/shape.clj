@@ -86,11 +86,12 @@
   [leaf? children [x1 y1 x2 y2]]
   (->RectangleNode leaf? children x1 y1 x2 y2))
 
-(defrecord RTree [root max-children min-children]
+(defrecord RTree [root max-children min-children node-split]
   Datafiable
   (datafy [_] {:type :RTree,
                :max-children max-children,
-               :min-children min-children
+               :min-children min-children,
+               :node-split node-split
                :root (datafy root)}))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))

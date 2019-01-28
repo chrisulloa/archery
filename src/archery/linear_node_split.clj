@@ -78,11 +78,11 @@
     [r-seed (add-child l-seed shape)]))
 
 (defn split
-  [seeds min-children]
+  [seeds children min-children]
   (loop [r-seed (first seeds)
          l-seed (second seeds)
          shapes (remove #{(-> r-seed :children first)
-                          (-> l-seed :children first)} (:children rn))]
+                          (-> l-seed :children first)} children)]
     (if-not (empty? shapes)
       (cond
         (= min-children (+ (count (:children r-seed)) (count shapes)))
@@ -100,4 +100,5 @@
 
 (defn linear-split
   [rn min-children]
-  (split (linear-seeds (:children rn) (leaf? rn)) min-children))
+  (let [children (:children rn)]
+    (split (linear-seeds children (leaf? rn)) children min-children)))
