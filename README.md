@@ -100,7 +100,7 @@ Some convenience functions to view and visualize the RTree:
     - [ ] ShapeIntersects
     - [x] RectangleContains
   * Insertion
-    - [ ] ChooseLeaf
+    - [x] ChooseLeaf
     - [x] AdjustTree
     - [ ] BulkLoading
   * Deletion
@@ -116,7 +116,7 @@ Some convenience functions to view and visualize the RTree:
    - [ ] Geohash
    - [ ] Z-Order Space Filling Curve
 * Visualizations
-  - [ ] Vega JSON Output
+  - [x] Vega JSON Output
 * Benchmarks
   - [ ] Criterium
 
