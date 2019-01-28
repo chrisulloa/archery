@@ -77,24 +77,27 @@
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
+(defn split
+  [seeds min-children]
+  (loop [r-seed (first seeds)
+         l-seed (second seeds)
+         shapes (remove #{(-> r-seed :children first)
+                          (-> l-seed :children first)} (:children rn))]
+    (if-not (empty? shapes)
+      (cond
+        (= min-children (+ (count (:children r-seed)) (count shapes)))
+        (recur (reduce add-child r-seed shapes)
+               l-seed
+               nil)
+        (= min-children (+ (count (:children l-seed)) (count shapes)))
+        (recur r-seed
+               (reduce add-child l-seed shapes)
+               nil)
+        :else
+        (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
+          (recur (first next-seeds) (second next-seeds) (rest shapes))))
+      [(compress r-seed) (compress l-seed)])))
+
 (defn linear-split
   [rn min-children]
-  (let [seeds (linear-seeds (:children rn) (leaf? rn))]
-    (loop [r-seed (first seeds)
-           l-seed (second seeds)
-           shapes (remove #{(-> r-seed :children first)
-                            (-> l-seed :children first)} (:children rn))]
-      (if-not (empty? shapes)
-        (cond
-          (= min-children (+ (count (:children r-seed)) (count shapes)))
-          (recur (reduce add-child r-seed shapes)
-                 l-seed
-                 nil)
-          (= min-children (+ (count (:children l-seed)) (count shapes)))
-          (recur r-seed
-                 (reduce add-child l-seed shapes)
-                 nil)
-          :else
-          (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
-            (recur (first next-seeds) (second next-seeds) (rest shapes))))
-        [(compress r-seed) (compress l-seed)]))))
+  (split (linear-seeds (:children rn) (leaf? rn)) min-children))
