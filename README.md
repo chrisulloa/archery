@@ -9,12 +9,17 @@ To create and load an RTree with shapes:
 ```
 (use '[rtree.core])
 
+; Default values, can also ues {:node-split :linear-split}
+(def empty-tree (rtree {:node-split :quadratic,
+                        :min-children 2,
+                        :max-chidlren 4}))
+
 (def tree
-  (reduce insert (rtree) [(->Point 0.5 10.5)
-                          (->Point 33.3 45.0)
-                          (->Rectangle 0.0 0.0 10.0 10.0)
-                          (->Rectangle 5.0 15.0 30.0 55.0)
-                          (->Point 3.0 10.0)]))
+  (reduce insert empty-tree [(->Point 0.5 10.5)
+                             (->Point 33.3 45.0)
+                             (->Rectangle 0.0 0.0 10.0 10.0)
+                             (->Rectangle 5.0 15.0 30.0 55.0)
+                             (->Point 3.0 10.0)]))
 ```
 
 You can also search by a shape that has an envelops? function:
