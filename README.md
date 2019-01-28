@@ -108,7 +108,7 @@ Some convenience functions to view and visualize the RTree:
     - [ ] CondenseTree
   * Updating
   * Splitting
-    - [ ] QuadraticSplit
+    - [x] QuadraticSplit
     - [x] LinearSplit
     - [ ] R\*TreeNodeSplit
 * Future Plans
