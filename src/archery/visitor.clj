@@ -3,7 +3,7 @@
             [archery.shape :refer [leaf? compress envelops? intersects? shape
                                    add-child choose-child-for-insert]]
             [archery.util :refer [fast-contains?]])
-  (:import [archery.shape Rectangle Point]))
+  (:import [archery.shape Rectangle Point RectangleNode]))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
@@ -65,11 +65,16 @@
     (tree-visitor
       (zipper node) [(node-contains-shape-visitor shape)])))
 
+(defn node-overflowing?
+  ^Boolean
+  [^Integer max-children ^Integer child-count]
+  (< max-children child-count))
+
 (defn adjust-node-visitor
   [min-children max-children split-fn]
   (fn [node state]
     (when (:inserted? state)
-      (if (< max-children (count (:children node)))
+      (if (node-overflowing? max-children (count (:children node)))
         {:node (split-fn node min-children),
          :child-split? true}
         (if (or (:child-split? state) (:enlarged-node? state))
@@ -79,10 +84,10 @@
 (defn insert-visitor
   [shape-to-insert]
   (fn [node state]
-    (when-not (:inserted? state)
+    (when-not (true? (:inserted? state))
       (let [found-best-shape? (= node (:next-node state))]
-        (if (or found-best-shape? (nil? (:next-node state)))
-          (if (leaf? node)
+        (if (or (true? found-best-shape?) (nil? (:next-node state)))
+          (if (true? (leaf? node))
             {:node (add-child node shape-to-insert),
              :state {:inserted? true,
                      :enlarged-node? (not (envelops? node shape-to-insert))}}

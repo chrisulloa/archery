@@ -75,32 +75,46 @@
         (recur geoms (update-ns ns-map geom))
         (map shape->node (seeds ns-map shapes))))))
 
+(defn <=enlargement
+  ^Boolean
+  [r-seed l-seed shape]
+  (<= (area-enlargement r-seed shape)
+      (area-enlargement l-seed shape)))
+
 (defn shape->seeds
   [shape r-seed l-seed]
-  (if (<= (area-enlargement r-seed shape)
-          (area-enlargement l-seed shape))
+  (if (<=enlargement r-seed l-seed shape)
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
+(defn top-off-seed?
+  ^Boolean
+  [^Integer child-count ^Integer min-children ^Integer shape-count]
+  (= min-children (+ child-count shape-count)))
+
 (defn split
   [seeds children ^Integer min-children]
-  (loop [r-seed (first seeds)
-         l-seed (second seeds)
-         shapes (remove #{(-> r-seed :children first)
-                          (-> l-seed :children first)} children)]
+  (loop [r-seed (seeds 0)
+         l-seed (seeds 1)
+         shapes (into [] (remove #{(first (:children r-seed))
+                                   (first (:children l-seed))}) children)]
     (if-not (empty? shapes)
       (cond
-        (= min-children (+ (count (:children r-seed)) (count shapes)))
+        (top-off-seed? min-children
+                       (count (:children r-seed))
+                       (count shapes))
         (recur (reduce add-child r-seed shapes)
                l-seed
                nil)
-        (= min-children (+ (count (:children l-seed)) (count shapes)))
+        (top-off-seed? min-children
+                       (count (:children l-seed))
+                       (count shapes))
         (recur r-seed
                (reduce add-child l-seed shapes)
                nil)
         :else
         (let [next-seeds (shape->seeds (first shapes) r-seed l-seed)]
-          (recur (first next-seeds) (second next-seeds) (rest shapes))))
+          (recur (next-seeds 0) (next-seeds 1) (rest shapes))))
       [(compress r-seed) (compress l-seed)])))
 
 (defn linear-split
