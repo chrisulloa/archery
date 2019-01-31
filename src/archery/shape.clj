@@ -48,7 +48,7 @@
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
-  (minimum-bounding-rectangle [r] r)
+  (minimum-bounding-rectangle [_] (->Rectangle x y x y))
   (minimum-bounding-rectangle [_ geom]
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x geom-x1) (double-min y geom-y1)
@@ -66,8 +66,7 @@
                :shape [x1 y1 x2 y2],
                :children (mapv datafy children)})
   Geometry
-  (minimum-bounding-rectangle [_]
-    (->Rectangle x1 y1 x2 y2))
+  (minimum-bounding-rectangle [_] (->Rectangle x1 y1 x2 y2))
   (minimum-bounding-rectangle [_ geom]
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
