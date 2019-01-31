@@ -111,7 +111,7 @@ Some convenience functions to view and visualize the RTree:
   * Splitting
     - [x] QuadraticSplit
     - [x] LinearSplit
-    - [ ] R\*TreeNodeSplit
+    - [ ] R\*Tree NodeSplit
 * Future Plans
    - [ ] Hilbert RTree
    - [ ] Geohash
