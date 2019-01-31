@@ -6,7 +6,6 @@
             [archery.linear-node-split :refer [linear-split]]
             [clojure.core.protocols :refer [Datafiable datafy]]
             [clojure.pprint :refer [pprint]])
-  (:import [archery.shape Rectangle RectangleNode Point])
   (:gen-class))
 
 (defprotocol Tree

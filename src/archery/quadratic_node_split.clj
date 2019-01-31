@@ -19,7 +19,7 @@
   (pair->seeds [_ leaf?]
     (letfn [(shape->node [s]
               (rectangle-node leaf? [s] (rectangle-shape s)))]
-    [(shape->node s1) (shape->node s2)])))
+      [(shape->node s1) (shape->node s2)])))
 
 (defn quadratic-seeds
   [shapes leaf?]
