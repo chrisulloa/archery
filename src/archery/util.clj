@@ -2,6 +2,7 @@
 
 (defn fast-contains?
   "Does an item contain a collection? Short circuits on first match."
+  ^Boolean
   [coll item]
   (if (empty? coll)
     false
@@ -50,7 +51,7 @@
             (recur rest-vals min-val)))))))
 
 (defn fast-max-key
-  [f ^Double short-circuit-val coll]
+  [f short-circuit-val coll]
   (loop [[val & rest-vals] coll
          max-val {:val val, :f-val ##-Inf}]
     (if (nil? val)

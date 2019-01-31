@@ -44,7 +44,7 @@
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2]))
 
-(defrecord Point [x y]
+(defrecord Point [^Double x ^Double y]
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
@@ -83,8 +83,7 @@
   (reshape [_ [dx1 dy1 dx2 dy2]]
     (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
   (choose-child-for-insert [_ geom]
-    (when-not leaf?
-      (fast-min-key #(area-enlargement % geom) 0 children)))
+    (fast-min-key #(area-enlargement % geom) 0.0 children))
   (compress [node]
     (if (empty? children)
       node
@@ -98,16 +97,8 @@
     (->RectangleNode leaf? new-children x1 y1 x2 y2)))
 
 (defn rectangle-node
-  [leaf? children [x1 y1 x2 y2]]
-  (->RectangleNode leaf? children x1 y1 x2 y2))
-
-(defrecord RTree [root max-children min-children node-split]
-  Datafiable
-  (datafy [_] {:type :RTree,
-               :max-children max-children,
-               :min-children min-children,
-               :node-split node-split
-               :root (datafy root)}))
+  [leaf? children shapev]
+  (apply ->RectangleNode leaf? children shapev))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
