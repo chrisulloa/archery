@@ -14,7 +14,7 @@
         {:root (->RectangleNode true [] 0.0 0.0 0.0 0.0),
          :max-children 4,
          :min-children 2,
-         :node-split :quadratic}))
+         :node-split quadratic-split}))
   ([params] (merge (rtree) params)))
 
 (defn insert
@@ -23,9 +23,7 @@
                    (adjust-node-visitor
                      (:min-children tree)
                      (:max-children tree)
-                     (if (= :quadratic (:node-split tree))
-                       quadratic-split
-                       linear-split))]]
+                     (:node-split tree))]]
      (assoc tree :root (:node (tree-inserter (zipper (:root tree)) visitors)))))
   ([tree geom & geoms]
    (reduce insert (insert tree geom) geoms)))
