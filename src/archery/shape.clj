@@ -25,7 +25,8 @@
   (make-node [node children] "Makes new node from existing node and new children."))
 
 (defprotocol Geometry
-  (area-enlargement [geom1 geom2] "Area of mbr around this shape and the other")
+  (minimum-bounding-rectangle [geom] [geom1 geom2] "Minimum bounding rectangle of the geoms.")
+  (area-enlargement [geom1 geom2] "Area of minimum-bounding-rectangle around this shape and the other")
   (area [geom] "Area of the given geometry")
   (shape [geom] "The defined shape of the geometry.")
   (rectangle-shape [geom] "Points of a given geometry."))
@@ -34,6 +35,11 @@
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
+  (minimum-bounding-rectangle [r] r)
+  (minimum-bounding-rectangle [_ geom]
+    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+      (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
+                   (double-max x2 geom-x2) (double-max y2 geom-y2))))
   (area ^Double [_] (double-area x1 y1 x2 y2))
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2]))
@@ -42,21 +48,14 @@
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
+  (minimum-bounding-rectangle [r] r)
+  (minimum-bounding-rectangle [_ geom]
+    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+      (->Rectangle (double-min x geom-x1) (double-min y geom-y1)
+                   (double-max x geom-x2) (double-max y geom-y2))))
   (area ^Double [_] 0.0)
   (shape [_] [x y])
   (rectangle-shape [_] [x y x y]))
-
-(defn minimum-bounding-rectangle
-  ([s] (apply ->Rectangle (rectangle-shape s)))
-  ([s1 s2]
-   (let [[s1-x1 s1-y1 s1-x2 s1-y2] (rectangle-shape s1)
-         [s2-x1 s2-y1 s2-x2 s2-y2] (rectangle-shape s2)]
-     (->Rectangle (double-min s1-x1 s2-x1) (double-min s1-y1 s2-y1)
-                  (double-max s1-x2 s2-x2) (double-max s1-y2 s2-y2))))
-  ([s1 s2 & shapes]
-   (reduce minimum-bounding-rectangle
-           (minimum-bounding-rectangle s1 s2)
-           shapes)))
 
 (defrecord RectangleNode [leaf? children
                           ^Double x1 ^Double y1
@@ -67,6 +66,12 @@
                :shape [x1 y1 x2 y2],
                :children (mapv datafy children)})
   Geometry
+  (minimum-bounding-rectangle [_]
+    (->Rectangle x1 y1 x2 y2))
+  (minimum-bounding-rectangle [_ geom]
+    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+      (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
+                   (double-max x2 geom-x2) (double-max y2 geom-y2))))
   (area ^Double [_] (double-area x1 y1 x2 y2))
   (area-enlargement ^Double [node geom]
     (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
@@ -84,10 +89,7 @@
   (compress [node]
     (if (empty? children)
       node
-      (->> children
-           (apply minimum-bounding-rectangle)
-           (shape)
-           (reshape node))))
+      (reshape node (shape (reduce minimum-bounding-rectangle children)))))
   (leaf? ^Boolean [_] leaf?)
   (branch? ^Boolean [_] true)
   (children-nodes [_] (when-not leaf? children))
