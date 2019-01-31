@@ -50,7 +50,7 @@
             (recur rest-vals min-val)))))))
 
 (defn fast-max-key
-  [f short-circuit-val coll]
+  [f ^Double short-circuit-val coll]
   (loop [[val & rest-vals] coll
          max-val {:val val, :f-val ##-Inf}]
     (if (nil? val)

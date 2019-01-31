@@ -13,7 +13,7 @@
 
 (defrecord QuadraticSeedPair [s1 s2]
   SeedPair
-  (inefficiency [_]
+  (inefficiency ^Double [_]
     (- (area (minimum-bounding-rectangle s1 s2))
        (area s1) (area s2)))
   (pair->seeds [_ leaf?]

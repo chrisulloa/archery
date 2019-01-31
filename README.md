@@ -99,6 +99,7 @@ Some convenience functions to view and visualize the RTree:
     - [ ] RadiusSearch
     - [ ] ShapeIntersects
     - [x] RectangleContains
+    - [ ] Composable Query API
   * Insertion
     - [x] ChooseLeaf
     - [x] AdjustTree

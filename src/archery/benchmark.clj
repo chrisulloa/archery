@@ -37,7 +37,11 @@
   (let [sample-size 20000
         sample (take sample-size (repeatedly random-shapes))
         smaller-sample (take 20 (repeatedly random-shapes))
-        create-rectangle (fn [[x1 y1 x2 y2]] (->Rectangle x1 y1 x2 y2))
+        create-rectangle (fn [[x1 y1 x2 y2]] (->Rectangle (double x1)
+                                                          (double y1)
+                                                          (double x2)
+                                                          (double y2)))
+        rectangles (into [] (map create-rectangle) sample)
         create-java-rectangle (fn [[x-min y-min x-max y-max]]
                                 (java-rectangle x-min y-min x-max y-max))]
     (println "Example Clojure RTree")
@@ -52,7 +56,7 @@
       (do
         (dotimes [n 25]
           (println (format "Clojure RTree Iteration %s" n))
-          (time (reduce insert (rtree) (map create-rectangle sample))))
+          (time (reduce insert (rtree) rectangles)))
         (println "For all runs:")))
     (time
       (do
