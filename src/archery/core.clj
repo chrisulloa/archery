@@ -17,7 +17,8 @@
   (datafy [_] {:type :RTree,
                :max-children max-children,
                :min-children min-children,
-               :node-split node-split
+               :node-split (if (= quadratic-split node-split)
+                             :quadratic :linear)
                :root (datafy root)})
   Tree
   (insert [tree geom]
