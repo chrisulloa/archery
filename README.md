@@ -9,12 +9,17 @@ To create and load an RTree with shapes:
 ```
 (use '[rtree.core])
 
+; Default values, can also ues {:node-split :linear}
+(def empty-tree (rtree {:node-split :quadratic,
+                        :min-children 2,
+                        :max-chidlren 4}))
+
 (def tree
-  (reduce insert (rtree) [(->Point 0.5 10.5)
-                          (->Point 33.3 45.0)
-                          (->Rectangle 0.0 0.0 10.0 10.0)
-                          (->Rectangle 5.0 15.0 30.0 55.0)
-                          (->Point 3.0 10.0)]))
+  (reduce insert empty-tree [(->Point 0.5 10.5)
+                             (->Point 33.3 45.0)
+                             (->Rectangle 0.0 0.0 10.0 10.0)
+                             (->Rectangle 5.0 15.0 30.0 55.0)
+                             (->Point 3.0 10.0)]))
 ```
 
 You can also search by a shape that has an envelops? function:
@@ -94,8 +99,9 @@ Some convenience functions to view and visualize the RTree:
     - [ ] RadiusSearch
     - [ ] ShapeIntersects
     - [x] RectangleContains
+    - [ ] Composable Query API
   * Insertion
-    - [ ] ChooseLeaf
+    - [x] ChooseLeaf
     - [x] AdjustTree
     - [ ] BulkLoading
   * Deletion
@@ -103,15 +109,15 @@ Some convenience functions to view and visualize the RTree:
     - [ ] CondenseTree
   * Updating
   * Splitting
-    - [ ] QuadraticSplit
+    - [x] QuadraticSplit
     - [x] LinearSplit
-    - [ ] R\*TreeNodeSplit
+    - [ ] R\*Tree NodeSplit
 * Future Plans
    - [ ] Hilbert RTree
    - [ ] Geohash
    - [ ] Z-Order Space Filling Curve
 * Visualizations
-  - [ ] Vega JSON Output
+  - [x] Vega JSON Output
 * Benchmarks
   - [ ] Criterium
 

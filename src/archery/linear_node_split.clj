@@ -4,17 +4,22 @@
                                    compress add-child area-enlargement
                                    shape rectangle-node]]))
 
-(defprotocol NodeSplit
+(def ^:const inf ##Inf)
+(def ^:const -inf ##-Inf)
+
+(defprotocol LinearNodeSplit
   (update-ns [_ geom] "Updates the ns-map with best seed values.")
   (normalized-separation-x [_] "With the given data computes normalized separation.")
   (normalized-separation-y [_] "With the given data computes normalized separation.")
   (seeds [_ shapes] "Returns seeds, either min-ub/max-lb shapes or two distinct from initial set."))
 
-(defrecord NodeSplitMap [x-max-lb-shape x-min-ub-shape
-                         x-max-lb x-min-ub x-min-lb x-max-ub
-                         y-max-lb-shape y-min-ub-shape
-                         y-max-lb y-min-ub y-min-lb y-max-ub]
-  NodeSplit
+(defrecord LinearNodeSplitMap [x-max-lb-shape x-min-ub-shape
+                               ^Double x-max-lb ^Double x-min-ub
+                               ^Double x-min-lb ^Double x-max-ub
+                               y-max-lb-shape y-min-ub-shape
+                               ^Double y-max-lb ^Double y-min-ub
+                               ^Double y-min-lb ^Double y-max-ub]
+  LinearNodeSplit
   (update-ns [ns-map geom]
     (let [rectangle (apply ->Rectangle (rectangle-shape geom))]
       (cond-> ns-map
@@ -34,12 +39,12 @@
               (assoc :y-min-lb (:y1 rectangle))
               (< y-max-ub (:y2 rectangle))
               (assoc :y-max-ub (:y2 rectangle)))))
-  (normalized-separation-x [_]
+  (normalized-separation-x ^Double [_]
     (if (= x-max-lb-shape x-min-ub-shape)
-      ##Inf (/ (- x-max-lb x-min-ub) (- x-max-ub x-min-lb))))
-  (normalized-separation-y [_]
+      inf (/ (- x-max-lb x-min-ub) (- x-max-ub x-min-lb))))
+  (normalized-separation-y ^Double [_]
     (if (= y-max-lb-shape y-min-ub-shape)
-      ##Inf (/ (- y-max-lb y-min-ub) (- y-max-ub y-min-lb))))
+      inf (/ (- y-max-lb y-min-ub) (- y-max-ub y-min-lb))))
   (seeds [ns-map shapes]
     (let [norm-sep-x (normalized-separation-x ns-map)
           norm-sep-y (normalized-separation-y ns-map)]
@@ -52,13 +57,13 @@
           [x-max-lb-shape x-min-ub-shape])))))
 
 (defn initial-node-split-map []
-  (map->NodeSplitMap
+  (map->LinearNodeSplitMap
     {:x-min-ub-shape nil, :x-max-lb-shape nil
-     :x-max-lb ##-Inf, :x-min-ub ##Inf,
-     :x-min-lb ##Inf, :x-max-ub ##-Inf,
+     :x-max-lb -inf, :x-min-ub inf,
+     :x-min-lb inf, :x-max-ub -inf,
      :y-min-ub-shape nil, :y-max-lb-shape nil
-     :y-max-lb ##-Inf, :y-min-ub ##Inf
-     :y-min-lb ##Inf, :y-max-ub ##-Inf}))
+     :y-max-lb -inf, :y-min-ub inf
+     :y-min-lb inf, :y-max-ub -inf}))
 
 (defn linear-seeds
   [shapes leaf?]
@@ -78,7 +83,7 @@
     [r-seed (add-child l-seed shape)]))
 
 (defn split
-  [seeds children min-children]
+  [seeds children ^Integer min-children]
   (loop [r-seed (first seeds)
          l-seed (second seeds)
          shapes (remove #{(-> r-seed :children first)

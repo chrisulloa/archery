@@ -1,7 +1,7 @@
 (ns archery.visitor
   (:require [archery.zipper :refer [tree-visitor tree-inserter zipper]]
             [archery.shape :refer [leaf? compress envelops? intersects? shape
-                                   add-child choose-child-for-insert ->RTree]]
+                                   add-child choose-child-for-insert]]
             [archery.util :refer [fast-contains?]])
   (:import [archery.shape Rectangle Point]))
 
