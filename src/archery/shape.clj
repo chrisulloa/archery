@@ -31,6 +31,11 @@
   (shape [geom] "The defined shape of the geometry.")
   (rectangle-shape [geom] "Points of a given geometry."))
 
+(extend-protocol Geometry
+  nil
+  (minimum-bounding-rectangle [_ geom]
+    (minimum-bounding-rectangle geom)))
+
 (defrecord Rectangle [^Double x1 ^Double y1 ^Double x2 ^Double y2]
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
@@ -87,7 +92,8 @@
   (compress [node]
     (if (empty? children)
       node
-      (reshape node (shape (reduce minimum-bounding-rectangle children)))))
+      (reshape
+        node (shape (reduce minimum-bounding-rectangle nil children)))))
   (leaf? ^Boolean [_] leaf?)
   (branch? ^Boolean [_] true)
   (children-nodes [_] (when-not leaf? children))
