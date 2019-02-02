@@ -14,11 +14,11 @@
   (seeds [_ shapes] "Returns seeds, either min-ub/max-lb shapes or two distinct from initial set."))
 
 (defrecord LinearNodeSplitMap [x-max-lb-shape x-min-ub-shape
-                               ^Double x-max-lb ^Double x-min-ub
-                               ^Double x-min-lb ^Double x-max-ub
+                               ^double x-max-lb ^double x-min-ub
+                               ^double x-min-lb ^double x-max-ub
                                y-max-lb-shape y-min-ub-shape
-                               ^Double y-max-lb ^Double y-min-ub
-                               ^Double y-min-lb ^Double y-max-ub]
+                               ^double y-max-lb ^double y-min-ub
+                               ^double y-min-lb ^double y-max-ub]
   LinearNodeSplit
   (update-ns [ns-map geom]
     (let [rectangle (apply ->Rectangle (rectangle-shape geom))]
@@ -39,10 +39,10 @@
               (assoc :y-min-lb (:y1 rectangle))
               (< y-max-ub (:y2 rectangle))
               (assoc :y-max-ub (:y2 rectangle)))))
-  (normalized-separation-x ^Double [_]
+  (normalized-separation-x ^double [_]
     (if (= x-max-lb-shape x-min-ub-shape)
       inf (/ (- x-max-lb x-min-ub) (- x-max-ub x-min-lb))))
-  (normalized-separation-y ^Double [_]
+  (normalized-separation-y ^double [_]
     (if (= y-max-lb-shape y-min-ub-shape)
       inf (/ (- y-max-lb y-min-ub) (- y-max-ub y-min-lb))))
   (seeds [ns-map shapes]
@@ -75,25 +75,19 @@
         (recur geoms (update-ns ns-map geom))
         (map shape->node (seeds ns-map shapes))))))
 
-(defn <=enlargement
-  ^Boolean
-  [r-seed l-seed shape]
-  (<= (area-enlargement r-seed shape)
-      (area-enlargement l-seed shape)))
-
 (defn shape->seeds
   [shape r-seed l-seed]
-  (if (<=enlargement r-seed l-seed shape)
+  (if (<= (area-enlargement r-seed shape)
+          (area-enlargement l-seed shape))
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
 (defn top-off-seed?
-  ^Boolean
-  [^Integer child-count ^Integer min-children ^Integer shape-count]
+  [^long child-count ^long min-children ^long shape-count]
   (= min-children (+ child-count shape-count)))
 
 (defn split
-  [seeds children ^Integer min-children]
+  [seeds children ^long min-children]
   (loop [r-seed (seeds 0)
          l-seed (seeds 1)
          shapes (into [] (remove #{(first (:children r-seed))

@@ -8,6 +8,7 @@
             [clojure.pprint :refer [pprint]])
   (:gen-class))
 
+
 (defprotocol Tree
   (insert [tree geom] "Insert value into rtree.")
   (search [tree geom] "Search RTree for values contained in geom."))

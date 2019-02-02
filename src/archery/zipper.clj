@@ -3,15 +3,14 @@
             [archery.shape :refer [map->RectangleNode branch?
                                    children-nodes make-node compress]]))
 
-(def ^:const zero 0.0)
-
 (defn zipper [node] (zip/zipper branch? children-nodes make-node node))
 
 (defn replace-node
   ([loc node]
    (zip/replace loc node))
   ([loc node1 node2]
-   (let [[_ {r :r :as path}] loc]
+   (let [[_ {r :r :as path}] loc
+         zero 0.0]
      (if (nil? path)
        (with-meta [(compress
                      (map->RectangleNode {:leaf? false,

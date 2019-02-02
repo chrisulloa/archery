@@ -2,7 +2,6 @@
 
 (defn fast-contains?
   "Does an item contain a collection? Short circuits on first match."
-  ^Boolean
   [coll item]
   (if (empty? coll)
     false

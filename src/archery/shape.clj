@@ -2,16 +2,16 @@
   (:require [archery.util :refer [distinct-by fast-min-key]]
             [clojure.core.protocols :refer [Datafiable datafy]]))
 
-(defn double-max ^Double
-[^Double a ^Double b]
+(defn double-max ^double
+[^double a ^double b]
   (Math/max a b))
 
-(defn double-min ^Double
-[^Double a ^Double b]
+(defn double-min ^double
+[^double a ^double b]
   (Math/min a b))
 
-(defn double-area ^Double
-[^Double x1 ^Double y1 ^Double x2 ^Double y2]
+(defn double-area ^double
+[^double x1 ^double y1 ^double x2 ^double y2]
   (* (- x2 x1) (- y2 y1)))
 
 (defprotocol TreeNode
@@ -36,7 +36,7 @@
   (minimum-bounding-rectangle [_ geom]
     (minimum-bounding-rectangle geom)))
 
-(defrecord Rectangle [^Double x1 ^Double y1 ^Double x2 ^Double y2]
+(defrecord Rectangle [^double x1 ^double y1 ^double x2 ^double y2]
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
@@ -45,11 +45,11 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
                    (double-max x2 geom-x2) (double-max y2 geom-y2))))
-  (area ^Double [_] (double-area x1 y1 x2 y2))
+  (area ^double [_] (double-area x1 y1 x2 y2))
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2]))
 
-(defrecord Point [^Double x ^Double y]
+(defrecord Point [^double x ^double y]
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
@@ -58,13 +58,13 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x geom-x1) (double-min y geom-y1)
                    (double-max x geom-x2) (double-max y geom-y2))))
-  (area ^Double [_] 0.0)
+  (area ^double [_] 0.0)
   (shape [_] [x y])
   (rectangle-shape [_] [x y x y]))
 
 (defrecord RectangleNode [leaf? children
-                          ^Double x1 ^Double y1
-                          ^Double x2 ^Double y2]
+                          ^double x1 ^double y1
+                          ^double x2 ^double y2]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
@@ -76,8 +76,8 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
                    (double-max x2 geom-x2) (double-max y2 geom-y2))))
-  (area ^Double [_] (double-area x1 y1 x2 y2))
-  (area-enlargement ^Double [node geom]
+  (area ^double [_] (double-area x1 y1 x2 y2))
+  (area-enlargement ^double [node geom]
     (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
       (- (* (- (double-max x2 s-x2) (double-min x1 s-x1))
             (- (double-max y2 s-y2) (double-min y1 s-y1)))
@@ -94,8 +94,8 @@
       node
       (reshape
         node (shape (reduce minimum-bounding-rectangle nil children)))))
-  (leaf? ^Boolean [_] leaf?)
-  (branch? ^Boolean [_] true)
+  (leaf? [_] leaf?)
+  (branch? [_] true)
   (children-nodes [_] (when-not leaf? children))
   (add-child [_ child]
     (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))

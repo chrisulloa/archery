@@ -66,8 +66,7 @@
       (zipper node) [(node-contains-shape-visitor shape)])))
 
 (defn node-overflowing?
-  ^Boolean
-  [^Integer max-children ^Integer child-count]
+  [^long max-children ^long child-count]
   (< max-children child-count))
 
 (defn adjust-node-visitor
@@ -77,20 +76,21 @@
       (if (node-overflowing? max-children (count (:children node)))
         {:node (split-fn node min-children),
          :child-split? true}
-        (if (or (:child-split? state) (:enlarged-node? state))
+        (if (or (:child-split? state)
+                (:enlarged-node? state))
           {:node [(compress node)]}
           {:node [node], :stop true})))))
 
 (defn insert-visitor
   [shape-to-insert]
   (fn [node state]
-    (when-not (true? (:inserted? state))
+    (when-not (:inserted? state)
       (let [found-best-shape? (= node (:next-node state))]
-        (if (or (true? found-best-shape?) (nil? (:next-node state)))
-          (if (true? (leaf? node))
+        (if (or found-best-shape? (nil? (:next-node state)))
+          (if (leaf? node)
             {:node (add-child node shape-to-insert),
              :state {:inserted? true,
-                     :enlarged-node? (not (envelops? node shape-to-insert))}}
+                     :enlarged-node? (envelops? node shape-to-insert)}}
             {:state {:next-node (choose-child-for-insert node shape-to-insert),
                      :move-down? found-best-shape?},
              :next true})
