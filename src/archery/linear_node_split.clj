@@ -56,7 +56,7 @@
           (take 2 (distinct-by shape shapes))
           [x-max-lb-shape x-min-ub-shape])))))
 
-(defn initial-node-split-map []
+(def initial-node-split-map
   (map->LinearNodeSplitMap
     {:x-min-ub-shape nil, :x-max-lb-shape nil
      :x-max-lb -inf, :x-min-ub inf,
@@ -73,7 +73,7 @@
            ns-map (initial-node-split-map)]
       (if-not (nil? geom)
         (recur geoms (update-ns ns-map geom))
-        (map shape->node (seeds ns-map shapes))))))
+        (mapv shape->node (seeds ns-map shapes))))))
 
 (defn shape->seeds
   [shape r-seed l-seed]
