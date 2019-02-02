@@ -7,28 +7,22 @@
             [clojure.math.combinatorics :refer [combinations]]
             [clojure.set :refer [difference]]))
 
-(defprotocol QuadraticNodeSplit
-  (inefficiency [_])
-  (pair->seeds [_ leaf?]))
+(defn inefficiency
+  ^double
+  [[s1 s2]]
+  (- (area (minimum-bounding-rectangle s1 s2))
+     (area s1) (area s2)))
 
-(defrecord QuadraticSeedPair [s1 s2]
-  QuadraticNodeSplit
-  (inefficiency ^double [_]
-    (- (area (minimum-bounding-rectangle s1 s2))
-       (area s1) (area s2)))
-  (pair->seeds [_ leaf?]
-    (letfn [(shape->node [s]
-              (rectangle-node leaf? [s] (rectangle-shape s)))]
-      [(shape->node s1) (shape->node s2)])))
+(defn pair->seeds
+  [leaf? [s1 s2]]
+  (letfn [(shape->node [s]
+            (rectangle-node leaf? [s] (rectangle-shape s)))]
+    [(shape->node s1) (shape->node s2)]))
 
 (defn quadratic-seeds
   [shapes leaf?]
-  (let [seed-pair (fn [[s1 s2]] (->QuadraticSeedPair s1 s2))]
-    (pair->seeds
-      (->> (combinations shapes 2)
-           (mapv seed-pair)
-           (apply (partial max-key inefficiency)))
-      leaf?)))
+  (pair->seeds leaf? (apply (partial max-key inefficiency)
+                            (combinations shapes 2))))
 
 (defn quadratic-split
   [rn min-children]
