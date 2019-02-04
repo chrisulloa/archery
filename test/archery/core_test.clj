@@ -22,7 +22,7 @@
                                    (->Rectangle 55 55 60 60)]
                                   0 0 60 60)
           root (->RectangleNode false [child1 child2] 0 0 50 50)
-          tree (->RTree root 2 4 quadratic-split)]
+          tree (->RTree root quadratic-split 2 4)]
       (is (= #{child1 child2} (set (leaf-collector root))))
       (is (= child1 (node-contains-shape-finder root (->Point 1 1))))
       (is (= child2 (node-contains-shape-finder root (->Rectangle 55 55 60 60))))
@@ -55,7 +55,7 @@
 
 (deftest test-envelops?
   (testing "Envelops function."
-    (is (= true (envelops? (map->Point {:x 5 :y 10 :foo ""})
+    (is (= true (envelops? (map->Point {:x 5.0 :y 10.0 :foo ""})
                            (->Point 5 10))))
     (is (= false (envelops? (->Point 5 10) (->Point 0 0))))
     (is (= false (envelops? (->Point 5 10) (->Rectangle 5 35 10 35))))
@@ -67,14 +67,14 @@
 
 (deftest test-rectangle-shape
   (testing "rectangle-shape"
-    (is (= [0 3 0 3] (rectangle-shape (->Point 0 3))))
-    (is (= [0 5 10 15] (rectangle-shape (->Rectangle 0 5 10 15))))))
+    (is (= [0.0 3.0 0.0 3.0] (rectangle-shape (->Point 0 3))))
+    (is (= [0.0 5.0 10.0 15.0] (rectangle-shape (->Rectangle 0 5 10 15))))))
 
 (deftest test-area-enlargement-diff
   (is (= 25.0 (area-enlargement (->RectangleNode true [] 0 0 5 5) (->Point 5 10)))))
 
 (deftest test-compress-rectangle
-  (is (= [5 5 10 10]
+  (is (= [5.0 5.0 10.0 10.0]
          (shape (compress (->RectangleNode true [] 5 5 10 10)))))
   (is (= [5.0 5.0 5.0 5.0]
          (shape (compress (->RectangleNode true [(->Point 5.0 5.0)] 0 0 0 0)))))
@@ -88,5 +88,5 @@
                 (->Point 10 10)
                 (->Rectangle 0 6 3 8)
                 (->Rectangle 15 35 30 55)]]
-    (is (= (set [[15 35 30 55] [0 0 0 0]])
+    (is (= (set [[15.0 35.0 30.0 55.0] [0.0 0.0 0.0 0.0]])
            (set (map shape (linear-seeds shapes true)))))))

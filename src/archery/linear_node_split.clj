@@ -70,7 +70,7 @@
   (letfn [(shape->node [s]
             (rectangle-node leaf? [s] (rectangle-shape s)))]
     (loop [[geom & geoms] shapes
-           ns-map (initial-node-split-map)]
+           ns-map initial-node-split-map]
       (if-not (nil? geom)
         (recur geoms (update-ns ns-map geom))
         (mapv shape->node (seeds ns-map shapes))))))
@@ -87,7 +87,7 @@
   (= min-children (+ child-count shape-count)))
 
 (defn split
-  [seeds children ^long min-children]
+  [seeds children min-children]
   (loop [r-seed (seeds 0)
          l-seed (seeds 1)
          shapes (into [] (remove #{(first (:children r-seed))

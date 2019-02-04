@@ -13,7 +13,9 @@
   (insert [tree geom] "Insert value into rtree.")
   (search [tree geom] "Search RTree for values contained in geom."))
 
-(defrecord RTree [root max-children min-children node-split]
+(defrecord RTree [root node-split
+                  ^long max-children
+                  ^long min-children]
   Datafiable
   (datafy [_] {:type :RTree,
                :max-children max-children,

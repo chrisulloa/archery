@@ -42,10 +42,9 @@
   ([zipper initial-state visitors]
    (loop [loc zipper
           state initial-state]
-     (let [context (visit-node (zip/node loc) state visitors)
-           new-node (:node context)
-           new-state (:state context)
-           stop (:stop context)
+     (let [{new-node :node
+            new-state :state
+            stop :stop} (visit-node (zip/node loc) state visitors)
            new-loc (if (= new-node (zip/node loc))
                      loc
                      (zip/replace loc new-node))
@@ -60,10 +59,9 @@
   ([zipper initial-state visitors]
    (loop [loc zipper
           state initial-state]
-     (let [context (visit-node (zip/node loc) state visitors)
-           new-node (:node context)
-           new-state (:state context)
-           stop (:stop context)
+     (let [{new-node :node
+            new-state :state
+            stop :stop} (visit-node (zip/node loc) state visitors)
            new-loc (if (= new-node (zip/node loc))
                      loc
                      (apply replace-node loc new-node))
