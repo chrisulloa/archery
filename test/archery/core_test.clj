@@ -2,8 +2,7 @@
   (:require [clojure.test :refer :all]
             [archery.core :refer :all]
             [archery.shape :refer :all]
-            [archery.quadratic-node-split :refer :all]
-            [archery.linear-node-split :refer :all]
+            [archery.node-split :refer :all]
             [archery.util :refer :all]
             [archery.visitor :refer :all]))
 

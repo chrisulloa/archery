@@ -2,8 +2,7 @@
   (:require [archery.shape :refer [->RectangleNode ->Point ->Rectangle]]
             [archery.visitor :refer [insert-visitor adjust-node-visitor enveloped-by-shape-visitor]]
             [archery.zipper :refer [zipper tree-inserter tree-visitor]]
-            [archery.quadratic-node-split :refer [quadratic-split]]
-            [archery.linear-node-split :refer [linear-split]]
+            [archery.node-split :refer [linear-split quadratic-split]]
             [clojure.core.protocols :refer [Datafiable datafy]]
             [clojure.pprint :refer [pprint]])
   (:gen-class))

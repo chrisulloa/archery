@@ -1,12 +1,15 @@
-(ns archery.linear-node-split
+(ns archery.node-split
   (:require [archery.util :refer [distinct-by]]
             [archery.shape :refer [->Rectangle rectangle-shape leaf?
                                    compress add-child area-enlargement
-                                   shape rectangle-node]]))
+                                   shape rectangle-node area
+                                   minimum-bounding-rectangle]]
+             [clojure.math.combinatorics :refer [combinations]]))
 
 (def ^:const inf ##Inf)
 (def ^:const -inf ##-Inf)
 
+;; Linear Node Split
 (defprotocol LinearNodeSplit
   (update-ns [_ geom] "Updates the ns-map with best seed values.")
   (normalized-separation-x [_] "With the given data computes normalized separation.")
@@ -75,6 +78,26 @@
         (recur geoms (update-ns ns-map geom))
         (mapv shape->node (seeds ns-map shapes))))))
 
+;; Quadratic Node Split
+(defn inefficiency
+  ^double
+  [[s1 s2]]
+  (- (area (minimum-bounding-rectangle s1 s2))
+     (area s1) (area s2)))
+
+(defn pair->seeds
+  [leaf? [s1 s2]]
+  (letfn [(shape->node [s]
+            (rectangle-node leaf? [s] (rectangle-shape s)))]
+    [(shape->node s1) (shape->node s2)]))
+
+(defn quadratic-seeds
+  [shapes leaf?]
+  (pair->seeds leaf? (apply (partial max-key inefficiency)
+                            (combinations shapes 2))))
+
+;; Node Splitting functions that take in either quadratic or linear seeds.
+
 (defn shape->seeds
   [shape r-seed l-seed]
   (if (<= (area-enlargement r-seed shape)
@@ -115,3 +138,8 @@
   [rn min-children]
   (let [children (:children rn)]
     (split (linear-seeds children (leaf? rn)) children min-children)))
+
+(defn quadratic-split
+  [rn min-children]
+  (let [children (:children rn)]
+    (split (quadratic-seeds children (leaf? rn)) children min-children)))

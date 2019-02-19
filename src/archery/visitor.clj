@@ -85,7 +85,7 @@
           (if (leaf? node)
             {:node (add-child node shape-to-insert),
              :state {:inserted? true,
-                     :enlarged-node? (envelops? node shape-to-insert)}}
+                     :enlarged-node? (not (envelops? node shape-to-insert))}}
             {:state {:next-node (choose-child-for-insert node shape-to-insert),
                      :move-down? found-best-shape?},
              :next true})
