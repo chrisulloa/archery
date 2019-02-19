@@ -1,18 +1,19 @@
 (ns archery.core
   (:require [archery.shape :refer [->RectangleNode ->Point ->Rectangle]]
             [archery.visitor :refer [insert-visitor adjust-node-visitor
-                                     enveloped-by-shape-visitor shapes-collector]]
+                                     enveloped-by-shape-visitor shapes-collector
+                                     leaf-collector]]
             [archery.zipper :refer [zipper tree-inserter tree-visitor]]
             [archery.node-split :refer [linear-split quadratic-split]]
-            [clojure.core.protocols :refer [Datafiable datafy]]
-            [clojure.pprint :refer [pprint]])
+            [clojure.core.protocols :refer [Datafiable datafy]])
   (:gen-class))
 
 
 (defprotocol Tree
   (insert [tree geom] "Insert value into rtree.")
   (search [tree geom] "Search RTree for values contained in geom.")
-  (shapes [tree] "Returns a flat list of all shapes."))
+  (shapes [tree] "Returns nodes, rectangles, and points of the tree.")
+  (leaves [tree] "Returns all leaf nodes of the tree."))
 
 (defrecord RTree [root node-split
                   ^long max-children
@@ -31,7 +32,8 @@
       (assoc tree :root (:node (tree-inserter (zipper root) visitors)))))
   (search [_ geom]
     (:state (tree-visitor (zipper root) [(enveloped-by-shape-visitor geom)])))
-  (shapes [_] (shapes-collector root)))
+  (shapes [_] (shapes-collector root))
+  (leaves [_] (leaf-collector root)))
 
 (defn rtree
   ([] (map->RTree

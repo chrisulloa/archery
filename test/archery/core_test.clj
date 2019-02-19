@@ -104,3 +104,15 @@
     (is (= 4 (count (:rectangles inserted-shapes))))
     (is (= 3 (count (:points inserted-shapes))))
     (is (= 3 (count (:nodes inserted-shapes))))))
+
+(deftest test-tree-children-parameters
+  (testing "Checking to make sure max-children and min-children are respected."
+    (let [shapes-to-insert (take 1000 (repeatedly #(->Point (rand-int 1000) (rand-int 1000))))
+          tree (reduce insert (rtree) shapes-to-insert)
+          inserted-shapes (shapes tree)
+          min-children 2
+          max-children 4]
+      (is (= 1000 (count (:points inserted-shapes))))
+      (is (not (empty? (:nodes inserted-shapes))))
+      (is (empty? (filter #(> (count (:children %)) max-children) (:nodes inserted-shapes))))
+      (is (empty? (filter #(< (count (:children %)) min-children) (:nodes inserted-shapes)))))))

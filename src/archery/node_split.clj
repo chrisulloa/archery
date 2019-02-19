@@ -105,10 +105,6 @@
     [(add-child r-seed shape) l-seed]
     [r-seed (add-child l-seed shape)]))
 
-(defn top-off-seed?
-  [^long child-count ^long min-children ^long shape-count]
-  (= min-children (+ child-count shape-count)))
-
 (defn split
   [seeds children min-children]
   (loop [r-seed (seeds 0)
@@ -117,15 +113,11 @@
                                    (first (:children l-seed))}) children)]
     (if-not (empty? shapes)
       (cond
-        (top-off-seed? min-children
-                       (count (:children r-seed))
-                       (count shapes))
+        (= min-children (+ (count (:children r-seed)) (count shapes)))
         (recur (reduce add-child r-seed shapes)
                l-seed
                nil)
-        (top-off-seed? min-children
-                       (count (:children l-seed))
-                       (count shapes))
+        (= min-children (+ (count (:children l-seed)) (count shapes)))
         (recur r-seed
                (reduce add-child l-seed shapes)
                nil)
