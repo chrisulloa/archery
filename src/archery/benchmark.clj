@@ -2,7 +2,8 @@
   (:require [archery.shape :refer [->Rectangle]]
             [archery.core :refer [rtree insert]]
             [clojure.core.protocols :refer [datafy]]
-            [clojure.pprint :refer [pprint]])
+            [clojure.pprint :refer [pprint]]
+            [criterium.core :as cm])
   (:import (com.github.davidmoten.rtree RTree)
            (com.github.davidmoten.rtree.geometry Geometries Rectangle))
   (:gen-class))
@@ -43,7 +44,8 @@
                                                           (double y2)))
         rectangles (into [] (map create-rectangle) sample)
         create-java-rectangle (fn [[x-min y-min x-max y-max]]
-                                (java-rectangle x-min y-min x-max y-max))]
+                                (java-rectangle x-min y-min x-max y-max))
+        java-rectangles (into [] (map create-java-rectangle) sample)]
     (println "Example Clojure RTree")
     (pprint (datafy (reduce insert (rtree) (map create-rectangle smaller-sample))))
     (println "\nExample Java RTree")
@@ -52,20 +54,10 @@
                                   (RTree/create)
                                   (map create-java-rectangle smaller-sample))))
     (println (format "Starting benchmark: Inserting %s rectangles." sample-size))
-    (time
-      (do
-        (dotimes [n 25]
-          (println (format "Clojure RTree Iteration %s" n))
-          (time (reduce insert (rtree) rectangles)))
-        (println "For all runs:")))
-    (time
-      (do
-        (dotimes [n 25]
-          (println (format "Java RTree Iteration %s" n))
-          (time
-            (reduce add-to-java-rtree
-                    (make-java-rtree)
-                    (map create-java-rectangle sample))))
-        (println "For all runs:")))))
+    (println "Java RTree Benchmark")
+    (cm/bench (reduce add-to-java-rtree (make-java-rtree) java-rectangles))
+    (println "Archery Benchmark:")
+    (cm/bench (reduce insert (rtree) rectangles))
+    (println "Benchmarking done!")))
 
 (defn -main [] (bench-against-java-library))

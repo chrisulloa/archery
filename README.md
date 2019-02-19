@@ -9,7 +9,7 @@ To create and load an RTree with shapes:
 ```
 (use '[rtree.core])
 
-; Default values, can also ues {:node-split :linear}
+; Default values, can also use {:node-split :linear}
 (def empty-tree (rtree {:node-split :quadratic,
                         :min-children 2,
                         :max-chidlren 4}))
@@ -119,7 +119,7 @@ Some convenience functions to view and visualize the RTree:
 * Visualizations
   - [x] Vega JSON Output
 * Benchmarks
-  - [ ] Criterium
+  - [x] Criterium
 
 ## References
 Alex Miller: Tree visitors in Clojure
