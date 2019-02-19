@@ -32,6 +32,34 @@ You can also search by a shape that has an envelops? function:
  #archery.shape.Point{:x 3.0, :y 10.0})
 ```
 
+Criterium benchmarks (inserting 20,000 rectangles) on i7 @ 4.20GHz. Notice the davidmoten/RTree is much faster. I am trying to avoid doing too many optimizations at this stage.
+```
+Archery Benchmark:
+Evaluation count : 120 in 60 samples of 2 calls.
+             Execution time mean : 754.215969 ms
+    Execution time std-deviation : 34.708262 ms
+   Execution time lower quantile : 702.300994 ms ( 2.5%)
+   Execution time upper quantile : 797.469882 ms (97.5%)
+                   Overhead used : 6.236561 ns
+
+Found 1 outliers in 60 samples (1.6667 %)
+        low-severe       1 (1.6667 %)
+ Variance from outliers : 31.9670 % Variance is moderately inflated by outliers
+ 
+Java RTree Benchmark:
+Evaluation count : 1020 in 60 samples of 17 calls.
+             Execution time mean : 55.397792 ms
+    Execution time std-deviation : 3.061980 ms
+   Execution time lower quantile : 51.176994 ms ( 2.5%)
+   Execution time upper quantile : 60.853864 ms (97.5%)
+                   Overhead used : 6.236561 ns
+
+Found 2 outliers in 60 samples (3.3333 %)
+        low-severe       1 (1.6667 %)
+        low-mild         1 (1.6667 %)
+ Variance from outliers : 40.1868 % Variance is moderately inflated by outliers
+ ```
+
 Some convenience functions to view and visualize the RTree:
 ```
 (datafy tree)
