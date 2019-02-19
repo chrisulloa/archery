@@ -89,3 +89,18 @@
                 (->Rectangle 15 35 30 55)]]
     (is (= (set [[15.0 35.0 30.0 55.0] [0.0 0.0 0.0 0.0]])
            (set (map shape (linear-seeds shapes true)))))))
+
+(deftest test-insertion
+  (let [shapes-to-insert [(->Point 0.0 0.0)
+                          (->Point 1000.0 1000.0)
+                          (->Rectangle 500.0 500.0 1200.0 1200.0)
+                          (->Rectangle 0.0 0.0 300.0 300.0)
+                          (->Rectangle 1000.0 1000.0 2000.0 2500.0)
+                          (->Rectangle 1200.0 1200.0 1500.0 1500.0)
+                          (->Point -100.0 -100.0)]
+        tree (reduce insert (rtree) shapes-to-insert)
+        inserted-shapes (shapes tree)]
+    (is (= [-100.0 -100.0 2000.0 2500.0] (shape (:root tree))))
+    (is (= 4 (count (:rectangles inserted-shapes))))
+    (is (= 3 (count (:points inserted-shapes))))
+    (is (= 3 (count (:nodes inserted-shapes))))))
