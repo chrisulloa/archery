@@ -1,17 +1,18 @@
-(ns archery.shape
-  (:require [archery.util :refer [distinct-by fast-min-key]]
-            [clojure.core.protocols :refer [Datafiable datafy]]))
+(ns archery.clj.shape
+  (:require [archery.clj.util :refer [distinct-by fast-min-key]]
+            [clojure.core.protocols :refer [Datafiable datafy]])
+  (:import (archery.util MutableRectangleNode)))
 
-(defn double-max ^Double
-[^Double a ^Double b]
+(defn double-max ^double
+[^double a ^double b]
   (Math/max a b))
 
-(defn double-min ^Double
-[^Double a ^Double b]
+(defn double-min ^double
+[^double a ^double b]
   (Math/min a b))
 
-(defn double-area ^Double
-[^Double x1 ^Double y1 ^Double x2 ^Double y2]
+(defn double-area ^double
+[^double x1 ^double y1 ^double x2 ^double y2]
   (* (- x2 x1) (- y2 y1)))
 
 (defprotocol TreeNode
@@ -36,7 +37,7 @@
   (minimum-bounding-rectangle [_ geom]
     (minimum-bounding-rectangle geom)))
 
-(defrecord Rectangle [^Double x1 ^Double y1 ^Double x2 ^Double y2]
+(defrecord Rectangle [^double x1 ^double y1 ^double x2 ^double y2]
   Datafiable
   (datafy [_] {:type :Rectangle, :shape [x1 y1 x2 y2]})
   Geometry
@@ -45,11 +46,11 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
                    (double-max x2 geom-x2) (double-max y2 geom-y2))))
-  (area ^Double [_] (double-area x1 y1 x2 y2))
+  (area ^double [_] (double-area x1 y1 x2 y2))
   (shape [_] [x1 y1 x2 y2])
   (rectangle-shape [_] [x1 y1 x2 y2]))
 
-(defrecord Point [^Double x ^Double y]
+(defrecord Point [^double x ^double y]
   Datafiable
   (datafy [_] {:type :Point, :shape [x y]})
   Geometry
@@ -58,13 +59,61 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x geom-x1) (double-min y geom-y1)
                    (double-max x geom-x2) (double-max y geom-y2))))
-  (area ^Double [_] 0.0)
+  (area ^double [_] 0.0)
   (shape [_] [x y])
   (rectangle-shape [_] [x y x y]))
 
+(extend-protocol MutableRectangleNode
+  Datafiable
+  (datafy [^MutableRectangleNode node]
+    {:type :MutableRectangleNode,
+     :leaf? (.isLeaf node),
+     :shape (shape node)
+     :children (.getChildren node)})
+  Geometry
+  (minimum-bounding-rectangle [node]
+    (->Rectangle (.getXMin node) (.getYMin node)
+                 (.getXMax node) (.getYMax node)))
+  (minimum-bounding-rectangle [node geom]
+    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+      (->Rectangle (double-min (.getXMin node) geom-x1)
+                   (double-min (.getYMin node) geom-y1)
+                   (double-max (.getXMax node) geom-x2)
+                   (double-max (.getYMax node) geom-y2))))
+  (area ^double [node] (double-area (.getXMin node) (.getYMin node)
+                                    (.getXMax node) (.getYMax node)))
+  (area-enlargement ^double [node geom]
+    (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
+      (- (* (- (double-max (.getXMax node) s-x2)
+               (double-min (.getXMin node) s-x1))
+            (- (double-max (.getYMax node) s-y2)
+               (double-min (.getYMin node) s-y1)))
+         (* (area node)))))
+  (shape [node] [(.getXMin node) (.getYMin node)
+                 (.getXMax node) (.getYMax node)])
+  (rectangle-shape [node] (shape node))
+  TreeNode
+  (reshape ^MutableRectangleNode [^MutableRectangleNode node [dx1 dy1 dx2 dy2]]
+    (MutableRectangleNode/reshape node dx1 dy1 dx2 dy2))
+  (choose-child-for-insert [^MutableRectangleNode node geom]
+    (fast-min-key #(area-enlargement % geom) 0.0 (.getChildren node)))
+  (compress [^MutableRectangleNode node]
+    (let [children (.getChildren node)]
+      (if (empty? children)
+        node
+        (reshape
+          node (shape (reduce minimum-bounding-rectangle nil children))))))
+  (leaf? [node] (.isLeaf node))
+  (branch? [node] (.isBranch node))
+  (children-nodes [node] (.getChildrenNodes node))
+  (add-child [node child]
+    (MutableRectangleNode/addChild node child))
+  (make-node [node new-children]
+    (MutableRectangleNode/setChildren node new-children)))
+
 (defrecord RectangleNode [leaf? children
-                          ^Double x1 ^Double y1
-                          ^Double x2 ^Double y2]
+                          ^double x1 ^double y1
+                          ^double x2 ^double y2]
   Datafiable
   (datafy [_] {:type :RectangleNode,
                :leaf? leaf?,
@@ -76,8 +125,8 @@
     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
       (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
                    (double-max x2 geom-x2) (double-max y2 geom-y2))))
-  (area ^Double [_] (double-area x1 y1 x2 y2))
-  (area-enlargement ^Double [node geom]
+  (area ^double [_] (double-area x1 y1 x2 y2))
+  (area-enlargement ^double [node geom]
     (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
       (- (* (- (double-max x2 s-x2) (double-min x1 s-x1))
             (- (double-max y2 s-y2) (double-min y1 s-y1)))
@@ -94,8 +143,8 @@
       node
       (reshape
         node (shape (reduce minimum-bounding-rectangle nil children)))))
-  (leaf? ^Boolean [_] leaf?)
-  (branch? ^Boolean [_] true)
+  (leaf? [_] leaf?)
+  (branch? [_] true)
   (children-nodes [_] (when-not leaf? children))
   (add-child [_ child]
     (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))

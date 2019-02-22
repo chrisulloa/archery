@@ -1,9 +1,7 @@
-(ns archery.zipper
+(ns archery.clj.zipper
   (:require [clojure.zip :as zip]
-            [archery.shape :refer [map->RectangleNode branch?
-                                   children-nodes make-node compress]]))
-
-(def ^:const zero 0.0)
+            [archery.clj.shape :refer [map->RectangleNode branch?
+                                       children-nodes make-node compress]]))
 
 (defn zipper [node] (zip/zipper branch? children-nodes make-node node))
 
@@ -11,7 +9,8 @@
   ([loc node]
    (zip/replace loc node))
   ([loc node1 node2]
-   (let [[_ {r :r :as path}] loc]
+   (let [[_ {r :r :as path}] loc
+         zero 0.0]
      (if (nil? path)
        (with-meta [(compress
                      (map->RectangleNode {:leaf? false,
@@ -43,10 +42,9 @@
   ([zipper initial-state visitors]
    (loop [loc zipper
           state initial-state]
-     (let [context (visit-node (zip/node loc) state visitors)
-           new-node (:node context)
-           new-state (:state context)
-           stop (:stop context)
+     (let [{new-node :node
+            new-state :state
+            stop :stop} (visit-node (zip/node loc) state visitors)
            new-loc (if (= new-node (zip/node loc))
                      loc
                      (zip/replace loc new-node))
@@ -61,10 +59,9 @@
   ([zipper initial-state visitors]
    (loop [loc zipper
           state initial-state]
-     (let [context (visit-node (zip/node loc) state visitors)
-           new-node (:node context)
-           new-state (:state context)
-           stop (:stop context)
+     (let [{new-node :node
+            new-state :state
+            stop :stop} (visit-node (zip/node loc) state visitors)
            new-loc (if (= new-node (zip/node loc))
                      loc
                      (apply replace-node loc new-node))

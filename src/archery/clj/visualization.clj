@@ -1,6 +1,6 @@
-(ns archery.visualization
-  (:require [archery.visitor :refer [shapes-collector]]
-            [archery.shape :refer [shape rectangle-shape]]))
+(ns archery.clj.visualization
+  (:require [archery.clj.visitor :refer [shapes-collector]]
+            [archery.clj.shape :refer [shape rectangle-shape]]))
 
 (defn shape->vega-data
   [[x1 y1 x2 y2]]

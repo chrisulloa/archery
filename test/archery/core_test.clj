@@ -1,11 +1,10 @@
 (ns archery.core-test
   (:require [clojure.test :refer :all]
-            [archery.core :refer :all]
-            [archery.shape :refer :all]
-            [archery.quadratic-node-split :refer :all]
-            [archery.linear-node-split :refer :all]
-            [archery.util :refer :all]
-            [archery.visitor :refer :all]))
+            [archery.clj.core :refer :all]
+            [archery.clj.shape :refer :all]
+            [archery.clj.node-split :refer :all]
+            [archery.clj.util :refer :all]
+            [archery.clj.visitor :refer :all]))
 
 (deftest test-fast-contains?
   (testing "Fast contains function."
@@ -22,7 +21,7 @@
                                    (->Rectangle 55 55 60 60)]
                                   0 0 60 60)
           root (->RectangleNode false [child1 child2] 0 0 50 50)
-          tree (->RTree root 2 4 quadratic-split)]
+          tree (->RTree root quadratic-split 2 4)]
       (is (= #{child1 child2} (set (leaf-collector root))))
       (is (= child1 (node-contains-shape-finder root (->Point 1 1))))
       (is (= child2 (node-contains-shape-finder root (->Rectangle 55 55 60 60))))
@@ -55,7 +54,7 @@
 
 (deftest test-envelops?
   (testing "Envelops function."
-    (is (= true (envelops? (map->Point {:x 5 :y 10 :foo ""})
+    (is (= true (envelops? (map->Point {:x 5.0 :y 10.0 :foo ""})
                            (->Point 5 10))))
     (is (= false (envelops? (->Point 5 10) (->Point 0 0))))
     (is (= false (envelops? (->Point 5 10) (->Rectangle 5 35 10 35))))
@@ -67,14 +66,14 @@
 
 (deftest test-rectangle-shape
   (testing "rectangle-shape"
-    (is (= [0 3 0 3] (rectangle-shape (->Point 0 3))))
-    (is (= [0 5 10 15] (rectangle-shape (->Rectangle 0 5 10 15))))))
+    (is (= [0.0 3.0 0.0 3.0] (rectangle-shape (->Point 0 3))))
+    (is (= [0.0 5.0 10.0 15.0] (rectangle-shape (->Rectangle 0 5 10 15))))))
 
 (deftest test-area-enlargement-diff
   (is (= 25.0 (area-enlargement (->RectangleNode true [] 0 0 5 5) (->Point 5 10)))))
 
 (deftest test-compress-rectangle
-  (is (= [5 5 10 10]
+  (is (= [5.0 5.0 10.0 10.0]
          (shape (compress (->RectangleNode true [] 5 5 10 10)))))
   (is (= [5.0 5.0 5.0 5.0]
          (shape (compress (->RectangleNode true [(->Point 5.0 5.0)] 0 0 0 0)))))
@@ -88,5 +87,32 @@
                 (->Point 10 10)
                 (->Rectangle 0 6 3 8)
                 (->Rectangle 15 35 30 55)]]
-    (is (= (set [[15 35 30 55] [0 0 0 0]])
+    (is (= (set [[15.0 35.0 30.0 55.0] [0.0 0.0 0.0 0.0]])
            (set (map shape (linear-seeds shapes true)))))))
+
+(deftest test-insertion
+  (let [shapes-to-insert [(->Point 0.0 0.0)
+                          (->Point 1000.0 1000.0)
+                          (->Rectangle 500.0 500.0 1200.0 1200.0)
+                          (->Rectangle 0.0 0.0 300.0 300.0)
+                          (->Rectangle 1000.0 1000.0 2000.0 2500.0)
+                          (->Rectangle 1200.0 1200.0 1500.0 1500.0)
+                          (->Point -100.0 -100.0)]
+        tree (reduce insert (rtree) shapes-to-insert)
+        inserted-shapes (shapes tree)]
+    (is (= [-100.0 -100.0 2000.0 2500.0] (shape (:root tree))))
+    (is (= 4 (count (:rectangles inserted-shapes))))
+    (is (= 3 (count (:points inserted-shapes))))
+    (is (= 3 (count (:nodes inserted-shapes))))))
+
+(deftest test-tree-children-parameters
+  (testing "Checking to make sure max-children and min-children are respected."
+    (let [shapes-to-insert (take 1000 (repeatedly #(->Point (rand-int 1000) (rand-int 1000))))
+          tree (reduce insert (rtree) shapes-to-insert)
+          inserted-shapes (shapes tree)
+          min-children 2
+          max-children 4]
+      (is (= 1000 (count (:points inserted-shapes))))
+      (is (not (empty? (:nodes inserted-shapes))))
+      (is (empty? (filter #(> (count (:children %)) max-children) (:nodes inserted-shapes))))
+      (is (empty? (filter #(< (count (:children %)) min-children) (:nodes inserted-shapes)))))))

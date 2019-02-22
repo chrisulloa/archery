@@ -39,15 +39,15 @@ Some convenience functions to view and visualize the RTree:
 {:type :RTree,
  :max-children 4,
  :min-children 2,
- :root {:type :RectangleNode,
+ :root {:type :MutableRectangleNode,
         :leaf? false,
         :shape [0.0 0.0 33.3 55.0],
-        :children [{:type :RectangleNode,
+        :children [{:type :MutableRectangleNode,
                     :leaf? true,
                     :shape [5.0 15.0 33.3 55.0],
                     :children [{:type :Point, :shape [33.3 45.0]}
                                {:type :Rectangle, :shape [5.0 15.0 30.0 55.0]}]}
-                   {:type :RectangleNode,
+                   {:type :MutableRectangleNode,
                     :leaf? true,
                     :shape [0.0 0.0 10.0 10.5],
                     :children [{:type :Rectangle, :shape [0.0 0.0 10.0 10.0]}
