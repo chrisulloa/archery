@@ -73,10 +73,10 @@
      :children (mapv datafy (.getChildren node))})
   Geometry
   (minimum-bounding-rectangle
-    ([node]
+    ([^MutableRectangleNode node]
      (->Rectangle (.getXMin node) (.getYMin node)
                   (.getXMax node) (.getYMax node)))
-    ([node geom]
+    ([^MutableRectangleNode node geom]
      (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
        (->Rectangle (double-min (.getXMin node) geom-x1)
                     (double-min (.getYMin node) geom-y1)
@@ -84,14 +84,14 @@
                     (double-max (.getYMax node) geom-y2)))))
   (area ^double [node] (double-area (.getXMin node) (.getYMin node)
                                     (.getXMax node) (.getYMax node)))
-  (area-enlargement ^double [node geom]
+  (area-enlargement ^double [^MutableRectangleNode node geom]
     (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
       (- (* (- (double-max (.getXMax node) s-x2)
                (double-min (.getXMin node) s-x1))
             (- (double-max (.getYMax node) s-y2)
                (double-min (.getYMin node) s-y1)))
          (* (area node)))))
-  (shape [node] [(.getXMin node) (.getYMin node)
+  (shape [^MutableRectangleNode node] [(.getXMin node) (.getYMin node)
                  (.getXMax node) (.getYMax node)])
   (rectangle-shape [node] (shape node))
   TreeNode
@@ -99,19 +99,19 @@
     (MutableRectangleNode/reshape node dx1 dy1 dx2 dy2))
   (choose-child-for-insert [^MutableRectangleNode node geom]
     (fast-min-key #(area-enlargement % geom) 0.0 (.getChildren node)))
-  (compress [^MutableRectangleNode node]
+  (compress [node]
     (let [children (children node)]
       (if (empty? children)
         node
         (reshape
           node (shape (reduce minimum-bounding-rectangle nil children))))))
-  (leaf? [node] (.isLeaf node))
-  (branch? [node] (.isBranch node))
-  (children [node] (.getChildren node))
-  (children-nodes [node] (.getChildrenNodes node))
-  (add-child [node child]
+  (leaf? [^MutableRectangleNode node] (.isLeaf node))
+  (branch? [^MutableRectangleNode node] (.isBranch node))
+  (children [^MutableRectangleNode node] (.getChildren node))
+  (children-nodes [^MutableRectangleNode node] (.getChildrenNodes node))
+  (add-child [^MutableRectangleNode node child]
     (MutableRectangleNode/addChild node child))
-  (make-node [node new-children]
+  (make-node [^MutableRectangleNode node new-children]
     (MutableRectangleNode/setChildren node new-children)))
 
 ;(defrecord RectangleNode [leaf? children
@@ -177,7 +177,7 @@
   (and (<= (:x1 r) (:x p) (:x2 r)) (<= (:y1 r) (:y p) (:y2 r))))
 
 (defmethod envelops? [MutableRectangleNode Point]
-  [r p]
+  [^MutableRectangleNode r p]
   (and (<= (.getXMin r) (:x p) (.getXMax r)) (<= (.getYMin r) (:y p) (.getYMax r))))
 
 (defmethod envelops? [Rectangle Rectangle]
@@ -186,17 +186,17 @@
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
 (defmethod envelops? [MutableRectangleNode MutableRectangleNode]
-  [r1 r2]
+  [^MutableRectangleNode r1 ^MutableRectangleNode r2]
   (and (<= (.getXMin r1) (.getXMin r2) (.getXMax r2) (.getXMax r1))
        (<= (.getYMin r1) (.getYMin  r2) (.getYMin r2) (.getYMin r1))))
 
 (defmethod envelops? [MutableRectangleNode Rectangle]
-  [r1 r2]
+  [^MutableRectangleNode r1 r2]
   (and (<= (.getXMin r1) (:x1 r2) (:x2 r2) (.getXMax r1))
        (<= (.getYMin r1) (:y1 r2) (:y2 r2) (.getYMax r1))))
 
 (defmethod envelops? [Rectangle MutableRectangleNode]
-  [r1 r2]
+  [r1 ^MutableRectangleNode r2]
   (and (<= (:x1 r1) (.getXMin r2) (.getXMax r2) (:x2 r1))
        (<= (:y1 r1) (.getYMin r2) (.getYMax r2) (:y2 r1))))
 
@@ -212,21 +212,21 @@
                 (> (:y1 r2) (:y2 r1))))))
 
 (defmethod intersects? [MutableRectangleNode MutableRectangleNode]
-  [r1 r2]
+  [^MutableRectangleNode r1 ^MutableRectangleNode r2]
   (and (not (or (> (.getXMin r1) (.getXMax r2))
                 (> (.getXMin r2) (.getXMax r1))))
        (not (or (> (.getYMin r1) (.getYMax r2))
                 (> (.getYMin r2) (.getYMax r1))))))
 
 (defmethod intersects? [MutableRectangleNode Rectangle]
-  [r1 r2]
+  [^MutableRectangleNode r1 r2]
   (and (not (or (> (.getXMin r1) (:x2 r2))
                 (> (:x1 r2) (.getXMax r1))))
        (not (or (> (.getYMin r1) (:y2 r2))
                 (> (:y1 r2) (.getYMax r1))))))
 
 (defmethod intersects? [Rectangle MutableRectangleNode]
-  [r1 r2]
+  [r1 ^MutableRectangleNode r2]
   (and (not (or (> (:x1 r1) (.getXMax r2))
                 (> (.getXMin r2) (:x2 r1))))
        (not (or (> (:y1 r1) (.getYMax r2))
