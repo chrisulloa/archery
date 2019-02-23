@@ -15,7 +15,7 @@ public class MutableRectangleNode {
         this.isLeaf = isLeaf;
     }
 
-    public MutableRectangleNode(boolean isLeaf, double xmin, double ymin, double xmax, double ymax, List<Object> children) {
+    public MutableRectangleNode(boolean isLeaf, List<Object> children, double xmin, double ymin, double xmax, double ymax) {
         this.xmin = xmin;
         this.ymin = ymin;
         this.xmax = xmax;

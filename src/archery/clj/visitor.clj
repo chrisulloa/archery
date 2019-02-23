@@ -1,9 +1,10 @@
 (ns archery.clj.visitor
   (:require [archery.clj.zipper :refer [tree-visitor tree-inserter zipper]]
             [archery.clj.shape :refer [leaf? compress envelops? intersects? shape
-                                       add-child choose-child-for-insert]]
+                                       add-child choose-child-for-insert children]]
             [archery.clj.util :refer [fast-contains?]])
-  (:import [archery.clj.shape Rectangle Point RectangleNode]))
+  (:import (archery.clj.shape Rectangle Point)
+           (archery.util MutableRectangleNode)))
 
 (defn leaf-visitor
   "Visitor that collects all leaf nodes."
@@ -18,7 +19,7 @@
   (fn [node _]
     (when (and (leaf? node)
                (envelops? node shape)
-               (fast-contains? (:children node) shape))
+               (fast-contains? (children node) shape))
       {:state node
        :stop true})))
 
@@ -31,7 +32,7 @@
       (when (leaf? node)
         {:state
          (->> node
-              :children
+              .getChildren
               (filter #(envelops? rectangle %))
               (concat state))
          :next true})
@@ -41,7 +42,7 @@
   [node state]
   (if-not (leaf? node)
     {:state (update state :nodes #(conj % node))}
-    (let [children (:children node)]
+    (let [children (children node)]
       {:state {:nodes (conj (:nodes state) node)
                :rectangles (concat (:rectangles state)
                                    (filter #(= (class %) Rectangle) children))
@@ -69,7 +70,7 @@
   [min-children ^long max-children split-fn]
   (fn [node {:keys [inserted? child-split? enlarged-node?]}]
     (when inserted?
-      (if (< max-children (count (:children node)))
+      (if (< max-children (count (children node)))
         {:node (split-fn node min-children),
          :child-split? true}
         (if (or child-split? enlarged-node?)

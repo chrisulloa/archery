@@ -1,6 +1,6 @@
 (ns archery.clj.zipper
   (:require [clojure.zip :as zip]
-            [archery.clj.shape :refer [map->RectangleNode branch?
+            [archery.clj.shape :refer [mutable-node branch?
                                        children-nodes make-node compress]]))
 
 (defn zipper [node] (zip/zipper branch? children-nodes make-node node))
@@ -13,9 +13,7 @@
          zero 0.0]
      (if (nil? path)
        (with-meta [(compress
-                     (map->RectangleNode {:leaf? false,
-                                          :children [node1 node2],
-                                          :x1 zero, :y1 zero, :x2 zero, :y2 zero}))
+                     (mutable-node false [node1 node2] zero zero zero zero))
                    (assoc path :changed? true)]
                   (meta loc))
        (with-meta [node1 (assoc path :r (cons node2 r) :changed? true)]

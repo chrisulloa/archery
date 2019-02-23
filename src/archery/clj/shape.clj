@@ -23,6 +23,7 @@
   (add-child [node child] "Add a child to the node.")
   (choose-child-for-insert [node shape] "Find best child node to insert shape into.")
   (children-nodes [node] "Children nodes of the node.")
+  (children [node] "Children of node")
   (make-node [node children] "Makes new node from existing node and new children."))
 
 (defprotocol Geometry
@@ -63,7 +64,7 @@
   (shape [_] [x y])
   (rectangle-shape [_] [x y x y]))
 
-(extend-protocol MutableRectangleNode
+(extend-type MutableRectangleNode
   Datafiable
   (datafy [^MutableRectangleNode node]
     {:type :MutableRectangleNode,
@@ -71,15 +72,16 @@
      :shape (shape node)
      :children (.getChildren node)})
   Geometry
-  (minimum-bounding-rectangle [node]
-    (->Rectangle (.getXMin node) (.getYMin node)
-                 (.getXMax node) (.getYMax node)))
-  (minimum-bounding-rectangle [node geom]
-    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
-      (->Rectangle (double-min (.getXMin node) geom-x1)
-                   (double-min (.getYMin node) geom-y1)
-                   (double-max (.getXMax node) geom-x2)
-                   (double-max (.getYMax node) geom-y2))))
+  (minimum-bounding-rectangle
+    ([node]
+     (->Rectangle (.getXMin node) (.getYMin node)
+                  (.getXMax node) (.getYMax node)))
+    ([node geom]
+     (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+       (->Rectangle (double-min (.getXMin node) geom-x1)
+                    (double-min (.getYMin node) geom-y1)
+                    (double-max (.getXMax node) geom-x2)
+                    (double-max (.getYMax node) geom-y2)))))
   (area ^double [node] (double-area (.getXMin node) (.getYMin node)
                                     (.getXMax node) (.getYMax node)))
   (area-enlargement ^double [node geom]
@@ -98,96 +100,105 @@
   (choose-child-for-insert [^MutableRectangleNode node geom]
     (fast-min-key #(area-enlargement % geom) 0.0 (.getChildren node)))
   (compress [^MutableRectangleNode node]
-    (let [children (.getChildren node)]
+    (let [children (children node)]
       (if (empty? children)
         node
         (reshape
           node (shape (reduce minimum-bounding-rectangle nil children))))))
   (leaf? [node] (.isLeaf node))
   (branch? [node] (.isBranch node))
+  (children [node] (.getChildren node))
   (children-nodes [node] (.getChildrenNodes node))
   (add-child [node child]
     (MutableRectangleNode/addChild node child))
   (make-node [node new-children]
     (MutableRectangleNode/setChildren node new-children)))
 
-(defrecord RectangleNode [leaf? children
-                          ^double x1 ^double y1
-                          ^double x2 ^double y2]
-  Datafiable
-  (datafy [_] {:type :RectangleNode,
-               :leaf? leaf?,
-               :shape [x1 y1 x2 y2],
-               :children (mapv datafy children)})
-  Geometry
-  (minimum-bounding-rectangle [_] (->Rectangle x1 y1 x2 y2))
-  (minimum-bounding-rectangle [_ geom]
-    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
-      (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
-                   (double-max x2 geom-x2) (double-max y2 geom-y2))))
-  (area ^double [_] (double-area x1 y1 x2 y2))
-  (area-enlargement ^double [node geom]
-    (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
-      (- (* (- (double-max x2 s-x2) (double-min x1 s-x1))
-            (- (double-max y2 s-y2) (double-min y1 s-y1)))
-         (* (area node)))))
-  (shape [_] [x1 y1 x2 y2])
-  (rectangle-shape [_] [x1 y1 x2 y2])
-  TreeNode
-  (reshape [_ [dx1 dy1 dx2 dy2]]
-    (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
-  (choose-child-for-insert [_ geom]
-    (fast-min-key #(area-enlargement % geom) 0.0 children))
-  (compress [node]
-    (if (empty? children)
-      node
-      (reshape
-        node (shape (reduce minimum-bounding-rectangle nil children)))))
-  (leaf? [_] leaf?)
-  (branch? [_] true)
-  (children-nodes [_] (when-not leaf? children))
-  (add-child [_ child]
-    (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
-  (make-node [_ new-children]
-    (->RectangleNode leaf? new-children x1 y1 x2 y2)))
+;(defrecord RectangleNode [leaf? children
+;                          ^double x1 ^double y1
+;                          ^double x2 ^double y2]
+;  Datafiable
+;  (datafy [_] {:type :RectangleNode,
+;               :leaf? leaf?,
+;               :shape [x1 y1 x2 y2],
+;               :children (mapv datafy children)})
+;  Geometry
+;  (minimum-bounding-rectangle [_] (->Rectangle x1 y1 x2 y2))
+;  (minimum-bounding-rectangle [_ geom]
+;    (let [[geom-x1 geom-y1 geom-x2 geom-y2] (rectangle-shape geom)]
+;      (->Rectangle (double-min x1 geom-x1) (double-min y1 geom-y1)
+;                   (double-max x2 geom-x2) (double-max y2 geom-y2))))
+;  (area ^double [_] (double-area x1 y1 x2 y2))
+;  (area-enlargement ^double [node geom]
+;    (let [[s-x1 s-y1 s-x2 s-y2] (rectangle-shape geom)]
+;      (- (* (- (double-max x2 s-x2) (double-min x1 s-x1))
+;            (- (double-max y2 s-y2) (double-min y1 s-y1)))
+;         (* (area node)))))
+;  (shape [_] [x1 y1 x2 y2])
+;  (rectangle-shape [_] [x1 y1 x2 y2])
+;  TreeNode
+;  (reshape [_ [dx1 dy1 dx2 dy2]]
+;    (->RectangleNode leaf? children dx1 dy1 dx2 dy2))
+;  (choose-child-for-insert [_ geom]
+;    (fast-min-key #(area-enlargement % geom) 0.0 children))
+;  (compress [node]
+;    (if (empty? children)
+;      node
+;      (reshape
+;        node (shape (reduce minimum-bounding-rectangle nil children)))))
+;  (leaf? [_] leaf?)
+;  (branch? [_] true)
+;  (children-nodes [_] (when-not leaf? children))
+;  (add-child [_ child]
+;    (->RectangleNode leaf? (conj children child) x1 y1 x2 y2))
+;  (make-node [_ new-children]
+;    (->RectangleNode leaf? new-children x1 y1 x2 y2)))
+
+(defn mutable-node
+  ^MutableRectangleNode
+  ([leaf? x1 y1 x2 y2]
+   (MutableRectangleNode. leaf? x1 y1 x2 y2))
+  ([leaf? children x1 y1 x2 y2]
+    (let [node (mutable-node leaf? x1 y1 x2 y2)]
+      (reduce add-child node children))))
 
 (defn rectangle-node
   [leaf? children shapev]
-  (apply ->RectangleNode leaf? children shapev))
+  (apply mutable-node leaf? children shapev))
 
 (defmulti envelops? (fn [x y] [(class x) (class y)]))
 
 (defmethod envelops? [Point Rectangle] [_ _] false)
 
-(defmethod envelops? [Point RectangleNode] [_ _] false)
+(defmethod envelops? [Point MutableRectangleNode] [_ _] false)
 
 (defmethod envelops? [Rectangle Point]
   [r p]
   (and (<= (:x1 r) (:x p) (:x2 r)) (<= (:y1 r) (:y p) (:y2 r))))
 
-(defmethod envelops? [RectangleNode Point]
+(defmethod envelops? [MutableRectangleNode Point]
   [r p]
-  (and (<= (:x1 r) (:x p) (:x2 r)) (<= (:y1 r) (:y p) (:y2 r))))
+  (and (<= (.getXMin r) (:x p) (.getXMax r)) (<= (.getYMin r) (:y p) (.getYMax r))))
 
 (defmethod envelops? [Rectangle Rectangle]
   [r1 r2]
   (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
        (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
 
-(defmethod envelops? [RectangleNode RectangleNode]
+(defmethod envelops? [MutableRectangleNode MutableRectangleNode]
   [r1 r2]
-  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
-       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
+  (and (<= (.getXMin r1) (.getXMin r2) (.getXMax r2) (.getXMax r1))
+       (<= (.getYMin r1) (.getYMin  r2) (.getYMin r2) (.getYMin r1))))
 
-(defmethod envelops? [RectangleNode Rectangle]
+(defmethod envelops? [MutableRectangleNode Rectangle]
   [r1 r2]
-  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
-       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
+  (and (<= (.getXMin r1) (:x1 r2) (:x2 r2) (.getXMax r1))
+       (<= (.getYMin r1) (:y1 r2) (:y2 r2) (.getYMax r1))))
 
-(defmethod envelops? [Rectangle RectangleNode]
+(defmethod envelops? [Rectangle MutableRectangleNode]
   [r1 r2]
-  (and (<= (:x1 r1) (:x1 r2) (:x2 r2) (:x2 r1))
-       (<= (:y1 r1) (:y1 r2) (:y2 r2) (:y2 r1))))
+  (and (<= (:x1 r1) (.getXMin r2) (.getXMax r2) (:x2 r1))
+       (<= (:y1 r1) (.getYMin r2) (.getYMax r2) (:y2 r1))))
 
 (defmethod envelops? [Point Point] [p1 p2] (= (shape p1) (shape p2)))
 
@@ -200,33 +211,33 @@
        (not (or (> (:y1 r1) (:y2 r2))
                 (> (:y1 r2) (:y2 r1))))))
 
-(defmethod intersects? [RectangleNode RectangleNode]
+(defmethod intersects? [MutableRectangleNode MutableRectangleNode]
   [r1 r2]
-  (and (not (or (> (:x1 r1) (:x2 r2))
-                (> (:x1 r2) (:x2 r1))))
-       (not (or (> (:y1 r1) (:y2 r2))
-                (> (:y1 r2) (:y2 r1))))))
+  (and (not (or (> (.getXMin r1) (.getXMax r2))
+                (> (.getXMin r2) (.getXMax r1))))
+       (not (or (> (.getYMin r1) (.getYMax r2))
+                (> (.getYMin r2) (.getYMax r1))))))
 
-(defmethod intersects? [RectangleNode Rectangle]
+(defmethod intersects? [MutableRectangleNode Rectangle]
   [r1 r2]
-  (and (not (or (> (:x1 r1) (:x2 r2))
-                (> (:x1 r2) (:x2 r1))))
-       (not (or (> (:y1 r1) (:y2 r2))
-                (> (:y1 r2) (:y2 r1))))))
+  (and (not (or (> (.getXMin r1) (:x2 r2))
+                (> (:x1 r2) (.getXMax r1))))
+       (not (or (> (.getYMin r1) (:y2 r2))
+                (> (:y1 r2) (.getYMax r1))))))
 
-(defmethod intersects? [Rectangle RectangleNode]
+(defmethod intersects? [Rectangle MutableRectangleNode]
   [r1 r2]
-  (and (not (or (> (:x1 r1) (:x2 r2))
-                (> (:x1 r2) (:x2 r1))))
-       (not (or (> (:y1 r1) (:y2 r2))
-                (> (:y1 r2) (:y2 r1))))))
+  (and (not (or (> (:x1 r1) (.getXMax r2))
+                (> (.getXMin r2) (:x2 r1))))
+       (not (or (> (:y1 r1) (.getYMax r2))
+                (> (.getYMin r2) (:y2 r1))))))
 
 (defmethod intersects? [Point Point] [p1 p2] (= (:shape p1) (:shape p2)))
 
 (defmethod intersects? [Rectangle Point] [r p] (envelops? r p))
 
-(defmethod intersects? [RectangleNode Point] [rn p] (envelops? rn p))
+(defmethod intersects? [MutableRectangleNode Point] [rn p] (envelops? rn p))
 
 (defmethod intersects? [Point Rectangle] [p r] (intersects? r p))
 
-(defmethod intersects? [Point RectangleNode] [p rn] (intersects? rn p))
+(defmethod intersects? [Point MutableRectangleNode] [p rn] (intersects? rn p))

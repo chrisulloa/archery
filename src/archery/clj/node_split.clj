@@ -3,8 +3,10 @@
             [archery.clj.shape :refer [->Rectangle rectangle-shape leaf?
                                        compress add-child area-enlargement
                                        shape rectangle-node area
-                                       minimum-bounding-rectangle]]
-            [clojure.math.combinatorics :refer [combinations]]))
+                                       minimum-bounding-rectangle
+                                       children]]
+            [clojure.math.combinatorics :refer [combinations]])
+  (:import (archery.util MutableRectangleNode)))
 
 (def ^:const inf ##Inf)
 (def ^:const -inf ##-Inf)
@@ -106,18 +108,18 @@
     [r-seed (add-child l-seed shape)]))
 
 (defn split
-  [seeds children min-children]
+  [seeds node-children min-children]
   (loop [r-seed (seeds 0)
          l-seed (seeds 1)
-         shapes (into [] (remove #{(first (:children r-seed))
-                                   (first (:children l-seed))}) children)]
+         shapes (into [] (remove #{(first (children r-seed))
+                                   (first (children l-seed))}) node-children)]
     (if-not (empty? shapes)
       (cond
-        (= min-children (+ (count (:children r-seed)) (count shapes)))
+        (= min-children (+ (count (children r-seed)) (count shapes)))
         (recur (reduce add-child r-seed shapes)
                l-seed
                nil)
-        (= min-children (+ (count (:children l-seed)) (count shapes)))
+        (= min-children (+ (count (children l-seed)) (count shapes)))
         (recur r-seed
                (reduce add-child l-seed shapes)
                nil)
@@ -128,10 +130,10 @@
 
 (defn linear-split
   [rn min-children]
-  (let [children (:children rn)]
+  (let [children (children rn)]
     (split (linear-seeds children (leaf? rn)) children min-children)))
 
 (defn quadratic-split
   [rn min-children]
-  (let [children (:children rn)]
+  (let [children (children rn)]
     (split (quadratic-seeds children (leaf? rn)) children min-children)))

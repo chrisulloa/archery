@@ -1,5 +1,5 @@
 (ns archery.clj.core
-  (:require [archery.clj.shape :refer [->RectangleNode ->Point ->Rectangle]]
+  (:require [archery.clj.shape :refer [mutable-node ->Point ->Rectangle]]
             [archery.clj.visitor :refer [insert-visitor adjust-node-visitor
                                          enveloped-by-shape-visitor shapes-collector
                                          leaf-collector]]
@@ -37,7 +37,7 @@
 
 (defn rtree
   ([] (map->RTree
-        {:root (->RectangleNode true [] 0.0 0.0 0.0 0.0),
+        {:root (mutable-node true 0.0 0.0 0.0 0.0),
          :max-children 4,
          :min-children 2,
          :node-split quadratic-split}))

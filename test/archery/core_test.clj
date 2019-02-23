@@ -4,7 +4,8 @@
             [archery.clj.shape :refer :all]
             [archery.clj.node-split :refer :all]
             [archery.clj.util :refer :all]
-            [archery.clj.visitor :refer :all]))
+            [archery.clj.visitor :refer :all])
+  (:import (archery.util MutableRectangleNode)))
 
 (deftest test-fast-contains?
   (testing "Fast contains function."
@@ -12,15 +13,15 @@
 
 (deftest test-visitors
   (testing "Visitor functions."
-    (let [child1 (->RectangleNode true
+    (let [child1 (mutable-node true
                                   [(->Point 1 1) (->Point 5 5)
                                    (->Rectangle 10 10 15 15)]
                                   0 0 50 50)
-          child2 (->RectangleNode true
+          child2 (mutable-node true
                                   [(->Point 60 60)
                                    (->Rectangle 55 55 60 60)]
                                   0 0 60 60)
-          root (->RectangleNode false [child1 child2] 0 0 50 50)
+          root (mutable-node false [child1 child2] 0 0 50 50)
           tree (->RTree root quadratic-split 2 4)]
       (is (= #{child1 child2} (set (leaf-collector root))))
       (is (= child1 (node-contains-shape-finder root (->Point 1 1))))
@@ -70,15 +71,15 @@
     (is (= [0.0 5.0 10.0 15.0] (rectangle-shape (->Rectangle 0 5 10 15))))))
 
 (deftest test-area-enlargement-diff
-  (is (= 25.0 (area-enlargement (->RectangleNode true [] 0 0 5 5) (->Point 5 10)))))
+  (is (= 25.0 (area-enlargement (mutable-node true 0 0 5 5) (->Point 5 10)))))
 
 (deftest test-compress-rectangle
   (is (= [5.0 5.0 10.0 10.0]
-         (shape (compress (->RectangleNode true [] 5 5 10 10)))))
+         (shape (compress (mutable-node true 5 5 10 10)))))
   (is (= [5.0 5.0 5.0 5.0]
-         (shape (compress (->RectangleNode true [(->Point 5.0 5.0)] 0 0 0 0)))))
+         (shape (compress (mutable-node true [(->Point 5.0 5.0)] 0 0 0 0)))))
   (is (= [5.0 5.0 10.0 10.0]
-         (shape (compress (->RectangleNode
+         (shape (compress (mutable-node
                             true [(->Point 5 5) (->Point 5 10) (->Point 10 10)]
                             5 5 8 8))))))
 
@@ -114,5 +115,5 @@
           max-children 4]
       (is (= 1000 (count (:points inserted-shapes))))
       (is (not (empty? (:nodes inserted-shapes))))
-      (is (empty? (filter #(> (count (:children %)) max-children) (:nodes inserted-shapes))))
-      (is (empty? (filter #(< (count (:children %)) min-children) (:nodes inserted-shapes)))))))
+      (is (empty? (filter #(> (count (.getChildren %)) max-children) (:nodes inserted-shapes))))
+      (is (empty? (filter #(< (count (.getChildren %)) min-children) (:nodes inserted-shapes)))))))
