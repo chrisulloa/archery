@@ -70,7 +70,7 @@
     {:type :MutableRectangleNode,
      :leaf? (.isLeaf node),
      :shape (shape node)
-     :children (.getChildren node)})
+     :children (mapv datafy (.getChildren node))})
   Geometry
   (minimum-bounding-rectangle
     ([node]
