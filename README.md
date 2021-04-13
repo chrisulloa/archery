@@ -12,7 +12,7 @@ To create and load an RTree with shapes:
 ; Default values, can also use {:node-split :linear}
 (def empty-tree (rtree {:node-split :quadratic,
                         :min-children 2,
-                        :max-chidlren 4}))
+                        :max-children 4}))
 
 (def tree
   (reduce insert empty-tree [(->Point 0.5 10.5)
